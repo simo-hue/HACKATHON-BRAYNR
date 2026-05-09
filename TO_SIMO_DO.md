@@ -1,0 +1,1 @@
+- NO manual actions required. The web UI was initialized and built automatically. You can start the application by navigating to the target folder and running `npm run dev`.
