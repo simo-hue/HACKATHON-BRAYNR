@@ -1083,11 +1083,13 @@ function App() {
                     </>
                   )}
 
-                  <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
-                    <button className="btn-save" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: true })}>
-                      <Plus size={18} /> Create Flashcard / Question
-                    </button>
-                  </div>
+                  <button 
+                    className="fab-button" 
+                    onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: true })}
+                    title="Create Flashcard / Question"
+                  >
+                    <Plus size={28} />
+                  </button>
                 </div>
               </motion.div>
             )}

@@ -199,3 +199,7 @@
 - [2026-05-09/23:01]: QA Study Mode UX Improvements
   - *Details*: Improved the user experience when answering open questions via voice. The main action button has been renamed from "Evaluate Answer with AI" to "Check answer". Additionally, a new "Re-record" button was added alongside it to allow users to easily discard their current transcript and try again without leaving the page or proceeding to evaluation.
   - *Tech Notes*: Modified `App.jsx` in the `studyState.type === 'qa'` render block. Replaced the single full-width button with a flex container holding the "Re-record" (`btn-skip`) and "Check answer" (`btn-save`) buttons. The re-record action simply resets `studyState.transcript` to an empty string, triggering the microphone UI to reappear.
+
+- [2026-05-09/23:10]: Floating Action Button for Question Creation
+  - *Details*: Replaced the inline "Create Flashcard / Question" button inside the file visualization view with a modern Floating Action Button (FAB) containing a "+" icon, positioned in the bottom right corner. This ensures the action is always accessible regardless of scroll position and improves overall aesthetics.
+  - *Tech Notes*: Modified `App.jsx` to swap the inline button structure with a `<button className="fab-button">`. Added `.fab-button` CSS styles in `App.css` featuring a fixed position, gradient background, z-index management, and hover/active micro-animations.
