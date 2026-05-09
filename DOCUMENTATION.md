@@ -52,10 +52,6 @@
   - *Details*: Aggiunta la nuova tab 'Statistiche'. Mostra i dati mock relativi alle flashcard (retention e streak), Q&A (punteggio medio) e l'aderenza al piano di studio (storico 14 giorni). Implementato un banner di "Check-in Giornaliero" che compare se l'utente non ha ancora validato la giornata.
   - *Tech Notes*: Modificato `App.jsx` introducendo lo stato `stats` sincronizzato in `localStorage`. Disegnato il banner per il check-in giornaliero e la scacchiera di aderenza al piano in `App.css`. Aggiornato `DOCUMENTATION.md`.
 
-- [2026-05-09/19:40]: Vista Calendario (Stile Mac)
-  - *Details*: Creata una nuova pagina "Calendario" accessibile dalla sidebar che replica lo stile dell'app Calendar di macOS. Mostra una griglia mensile (Maggio 2026) con le sessioni di studio pianificate per ogni giorno in base agli obiettivi.
-  - *Tech Notes*: Modificati `App.jsx` e `App.css`. Aggiunta la voce nel menu sidebar. Implementata la logica per mappare i giorni della settimana con gli obiettivi impostati, mostrando i tag delle sessioni nelle celle del calendario. Evidenziato il giorno corrente (9 Maggio).
-
 - [2026-05-09/19:42]: Ripristino Collegamento Sidebar Calendario
   - *Details*: Aggiunto nuovamente il collegamento alla pagina "Calendario" nella sidebar, che era stato rimosso durante le modifiche manuali dell'utente.
   - *Tech Notes*: Modificato `App.jsx` inserendo il tag `<a>` per il calendario tra "Obiettivi" e "Statistiche".
@@ -103,3 +99,19 @@
 - [2026-05-09/20:05]: Filtro Materie per Nuovi Obiettivi
   - *Details*: Modificata la schermata di selezione della materia quando si crea un nuovo obiettivo. Ora vengono mostrate solo le materie che non hanno ancora un obiettivo impostato. Se tutte le materie hanno un obiettivo, appare un messaggio informativo.
   - *Tech Notes*: Modificato `App.jsx` inserendo un filtro `.filter(subject => !goals[subject])` prima del map delle materie.
+
+- [2026-05-09/20:07]: Visualizzazione Interleaving nel Calendario
+  - *Details*: Implementata una visualizzazione "wow" per l'interleaving nel calendario. Invece di semplici tag, ogni giorno mostra una barra orizzontale segmentata dove ogni segmento rappresenta una materia e la sua larghezza è proporzionale alle ore di studio dedicate. Ogni materia ha un colore unico coerente.
+  - *Tech Notes*: Modificato `App.jsx`. Aggiunta la funzione `getSubjectColor` per generare colori hashati. Creata la struttura `.interleaving-bar` e calcolate le percentuali di larghezza.
+
+- [2026-05-09/21:05]: Modalità di Studio e Testing (Flashcard e QA Audio)
+  - *Details*: Creato un intero sistema integrato e coerente per il testing dei concetti. Attivabile dal pulsante "Studia" su ogni file. Include due modalità: "Flashcards" (card a ribaltamento 3D con feedback Sapevo/Incerto/Non sapevo) e "Domande Aperte" (interfaccia vocale simulata che "registra", "trascrive" e valuta la risposta restituendo score e feedback dell'IA).
+  - *Tech Notes*: Creato il `study_mode` view in `App.jsx`. Aggiunti componenti animati complessi in CSS per flip 3D (`.flashcard-inner`, `preserve-3d`) e per l'impulso rosso della registrazione audio. Gestione di delay simulati per `speech-to-text` e "AI Processing". Aggiornati i file `App.jsx`, `App.css` e `DOCUMENTATION.md`.
+
+- [2026-05-09/21:11]: Dashboard Statistiche Professionale
+  - *Details*: Rivoluzionata la pagina delle statistiche inserendo grafici visivi ed avanzati senza librerie esterne. Ora include: Grafici circolari SVG per il tasso di ritenzione e il punteggio medio Q&A, e un grafico a barre dinamico calcolato in tempo reale per la distribuzione delle ore settimanali pianificate per materia.
+  - *Tech Notes*: Modificato `App.jsx`. Inserito codice SVG inline con calcolo di `strokeDashoffset` per i cerchi percentuali. Implementato il grafico a barre tramite flexbox ed altezze percentuali calcolate.
+
+- [2026-05-09/21:17]: Flashcards e QA Dinamici (User-Generated)
+  - *Details*: Implementata la funzionalità che permette all'utente di creare Flashcard e Domande Aperte personalizzate e collegarle a specifiche materie. Rimosso l'hard-coding dei dati mock nella modalità "Studia".
+  - *Tech Notes*: Modificato `App.jsx`. Aggiunto lo stato persistente `subjectQuestions`. Inserito un form tramite modale nella vista `read_file` per l'inserimento rapido di domande/risposte. Modificata la logica della vista `study_mode` per iterare dinamicamente sulle domande generate dall'utente. Gestiti anche gli "empty state" se non ci sono domande.
