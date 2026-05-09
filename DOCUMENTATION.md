@@ -123,3 +123,11 @@
 - [2026-05-09/21:26]: Miglioramento UX Trascrizione e View Reale
   - *Details*: Aggiunto un feedback visivo immediato per ogni singolo file in fase di upload. Ora i file audio appaiono subito in lista con uno stato dedicato ("Trascrizione in corso..."). Inoltre, nella vista del documento (Lettore), il lorem ipsum è stato rimosso per mostrare la trascrizione reale generata dall'API.
   - *Tech Notes*: Refactoring di `processFiles` in `App.jsx` per l'inserimento di placeholder asincroni. Aggiornato il rendering condizionale in `preview-item` basato su `file.isTranscribing`. Modificata la vista `read_file` per fare render di `currentFile.content` se disponibile.
+
+- [2026-05-09/21:30]: Bugfix Visualizzazione Testo Mock
+  - *Details*: Risolto un problema per cui il testo visualizzato rimaneva "Lorem Ipsum" anche dopo la trascrizione con successo. Il bug era causato dalla mancata persistenza del testo trascritto durante il salvataggio dei file nel file system mock.
+  - *Tech Notes*: Modificato `handleSaveUploadAndGoToGoals` in `App.jsx`. Ora il mapping dei file mantiene `type` dinamico e preserva la proprietà `content` generata da ElevenLabs, permettendone la corretta visualizzazione nella vista `read_file`.
+
+- [2026-05-09/21:35]: Integrazione Trascrizione Vocale Real-time con ElevenLabs
+  - *Details*: Implementata la registrazione vocale reale per le Domande Aperte (QA) nella modalità "Studia". Quando l'utente preme il microfono, il sistema richiede l'accesso al dispositivo, registra l'audio in formato WebM e, al termine, lo invia all'API ElevenLabs Scribe per generare la trascrizione reale dell'utente.
+  - *Tech Notes*: Sostituito il timer mock in `handleMicClick` all'interno di `App.jsx` utilizzando le API native del browser (`navigator.mediaDevices.getUserMedia` e `MediaRecorder`). L'audio campionato viene racchiuso in un `Blob` e inviato asincronamente all'endpoint `v1/speech-to-text`, integrando il medesimo flusso usato precedentemente per l'upload dei file. Aggiunti gli hook `useRef` per la persistenza del `MediaRecorder` senza triggerare render.

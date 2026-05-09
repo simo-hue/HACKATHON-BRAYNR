@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, 
@@ -346,18 +346,73 @@ function App() {
   const currentSubjectFlashcards = subjectQuestions[currentFolder]?.flashcards || [];
   const currentSubjectQA = subjectQuestions[currentFolder]?.qa || [];
 
-  const handleMicClick = () => {
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
+  const handleMicClick = async () => {
     if (studyState.isRecording) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
       setStudyState({ ...studyState, isRecording: false, isProcessing: true });
-      setTimeout(() => {
-        setStudyState(prev => ({
-          ...prev, 
-          isProcessing: false,
-          transcript: "Questa è una risposta vocale simulata dall'IA dopo aver ascoltato il tuo audio per la domanda: " + (currentSubjectQA[prev.currentIndex]?.q || ''),
-        }));
-      }, 1500);
     } else {
-      setStudyState({ ...studyState, isRecording: true, transcript: '', feedback: null, score: null });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          
+          try {
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'recording.webm');
+            formData.append('model_id', 'scribe_v1');
+            
+            const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+              method: 'POST',
+              headers: {
+                'xi-api-key': import.meta.env.VITE_ELEVENLABS_API_KEY
+              },
+              body: formData
+            });
+            
+            if (!response.ok) {
+              throw new Error(`ElevenLabs API error: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            setStudyState(prev => ({
+              ...prev, 
+              isProcessing: false,
+              transcript: data.text || "Trascrizione non riuscita o audio vuoto.",
+            }));
+          } catch (err) {
+            console.error("Transcription failed", err);
+            setStudyState(prev => ({
+              ...prev, 
+              isProcessing: false,
+              transcript: "Errore durante la trascrizione dell'audio.",
+            }));
+          }
+          
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        setStudyState({ ...studyState, isRecording: true, transcript: '', feedback: null, score: null });
+      } catch (err) {
+        console.error("Mic access denied", err);
+        alert("Impossibile accedere al microfono. Controlla i permessi.");
+      }
     }
   };
 
