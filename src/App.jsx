@@ -1275,9 +1275,14 @@ function App() {
                             </div>
 
                             {!studyState.feedback ? (
-                              <button className="btn-save" style={{ width: '100%', marginTop: '2rem', padding: '1rem' }} onClick={handleEvaluateAudio}>
-                                Evaluate Answer with AI
-                              </button>
+                              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                <button className="btn-skip" style={{ flex: 1, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} onClick={() => setStudyState({ ...studyState, transcript: '' })}>
+                                  <Mic size={18} /> Re-record
+                                </button>
+                                <button className="btn-save" style={{ flex: 2, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} onClick={handleEvaluateAudio}>
+                                  <BrainCircuit size={18} /> Check answer
+                                </button>
+                              </div>
                             ) : (
                               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                                 <div className="ai-feedback-box" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
