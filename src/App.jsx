@@ -29,7 +29,8 @@ import {
   Flame,
   BrainCircuit,
   HelpCircle,
-  Trash2
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import './App.css';
 
@@ -122,6 +123,7 @@ function App() {
     daysOfWeek: []
   });
   const [viewingGoal, setViewingGoal] = useState(null);
+  const [folderToDelete, setFolderToDelete] = useState(null);
 
   const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
@@ -161,18 +163,22 @@ function App() {
   };
   const handleDeleteFolder = (e, folderName) => {
     e.stopPropagation();
-    if (window.confirm(`Sei sicuro di voler eliminare la materia "${folderName}"? Tutti i file e gli obiettivi associati verranno rimossi.`)) {
-      setFileSystem(prev => {
-        const updated = { ...prev };
-        delete updated[folderName];
-        return updated;
-      });
-      setGoals(prev => {
-        const updated = { ...prev };
-        delete updated[folderName];
-        return updated;
-      });
-    }
+    setFolderToDelete(folderName);
+  };
+
+  const confirmDeleteFolder = () => {
+    if (!folderToDelete) return;
+    setFileSystem(prev => {
+      const updated = { ...prev };
+      delete updated[folderToDelete];
+      return updated;
+    });
+    setGoals(prev => {
+      const updated = { ...prev };
+      delete updated[folderToDelete];
+      return updated;
+    });
+    setFolderToDelete(null);
   };
 
   const handleCheckIn = (studied) => {
@@ -549,6 +555,25 @@ function App() {
                   </div>
                   <h3>Nuova Materia</h3>
                 </motion.div>
+
+                {folderToDelete && (
+                  <div className="modal-overlay" onClick={() => setFolderToDelete(null)}>
+                    <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} onClick={(e) => e.stopPropagation()}>
+                      <div className="modal-header">
+                        <AlertTriangle size={32} color="#ef4444" />
+                        <h3>Elimina Materia</h3>
+                      </div>
+                      <div className="modal-body">
+                        <p>Sei sicuro di voler eliminare la materia <strong>{folderToDelete}</strong>?</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Tutti i file caricati e gli obiettivi associati verranno rimossi permanentemente. Questa azione non è reversibile.</p>
+                      </div>
+                      <div className="modal-footer" style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button onClick={() => setFolderToDelete(null)} className="btn-skip" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}>Annulla</button>
+                        <button onClick={confirmDeleteFolder} className="btn-checkin no" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}><Trash2 size={18} /> Elimina</button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -750,13 +775,16 @@ function App() {
                     {Object.keys(fileSystem).length === 0 && (
                       <p style={{ color: 'var(--text-muted)' }}>Non hai ancora creato nessuna materia.</p>
                     )}
-                    {Object.keys(fileSystem).map(subject => (
+                    {Object.keys(fileSystem).length > 0 && Object.keys(fileSystem).filter(subject => !goals[subject]).length === 0 && (
+                      <p style={{ color: 'var(--text-muted)' }}>Tutte le tue materie hanno già un obiettivo impostato.</p>
+                    )}
+                    {Object.keys(fileSystem).filter(subject => !goals[subject]).map(subject => (
                       <button
                         key={subject}
                         className="btn-subject-select"
                         onClick={() => {
                           setCurrentFolder(subject);
-                          setTempGoal(goals[subject] || { deadline: "", dailyHours: 2, daysOfWeek: [] });
+                          setTempGoal({ deadline: "", dailyHours: 2, daysOfWeek: [] });
                           setPreviousView('obiettivi');
                           setCurrentView('set_goals');
                         }}

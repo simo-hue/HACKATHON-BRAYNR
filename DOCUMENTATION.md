@@ -95,3 +95,11 @@
 - [2026-05-09/20:01]: Spaziatura Titolo Creazione Materia
   - *Details*: Aggiunto un margine inferiore al titolo "Come vuoi chiamare la materia?" nella vista di creazione per distanziarlo dal campo di testo e migliorare la leggibilità.
   - *Tech Notes*: Modificato `App.jsx` aggiungendo `style={{ marginBottom: '1.5rem' }}` all'elemento `<h2>`.
+
+- [2026-05-09/20:02]: Modal di Conferma Eliminazione Personalizzato
+  - *Details*: Sostituito il `window.confirm` nativo di Chrome con un modal personalizzato in stile con l'applicazione per la conferma dell'eliminazione di una materia. Il modal include un'icona di avviso e un pulsante di eliminazione rosso.
+  - *Tech Notes*: Modificato `App.jsx`. Aggiunto lo stato `folderToDelete` e la funzione `confirmDeleteFolder`. Importata l'icona `AlertTriangle`.
+
+- [2026-05-09/20:05]: Filtro Materie per Nuovi Obiettivi
+  - *Details*: Modificata la schermata di selezione della materia quando si crea un nuovo obiettivo. Ora vengono mostrate solo le materie che non hanno ancora un obiettivo impostato. Se tutte le materie hanno un obiettivo, appare un messaggio informativo.
+  - *Tech Notes*: Modificato `App.jsx` inserendo un filtro `.filter(subject => !goals[subject])` prima del map delle materie.
