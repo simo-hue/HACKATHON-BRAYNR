@@ -115,3 +115,11 @@
 - [2026-05-09/21:17]: Flashcards e QA Dinamici (User-Generated)
   - *Details*: Implementata la funzionalità che permette all'utente di creare Flashcard e Domande Aperte personalizzate e collegarle a specifiche materie. Rimosso l'hard-coding dei dati mock nella modalità "Studia".
   - *Tech Notes*: Modificato `App.jsx`. Aggiunto lo stato persistente `subjectQuestions`. Inserito un form tramite modale nella vista `read_file` per l'inserimento rapido di domande/risposte. Modificata la logica della vista `study_mode` per iterare dinamicamente sulle domande generate dall'utente. Gestiti anche gli "empty state" se non ci sono domande.
+
+- [2026-05-09/21:20]: Integrazione ElevenLabs Speech-to-Text (Scribe)
+  - *Details*: Aggiunta la trascrizione automatica da file audio/video a testo durante la fase di upload utilizzando l'API di ElevenLabs. Il file importato, se è un media, viene inviato all'API e salvato localmente come file di testo, mantenendo il nome originale.
+  - *Tech Notes*: Modificata la funzione di upload in `App.jsx` per invocare asincronamente l'endpoint API `speech-to-text` (model_id: scribe_v1). Aggiunto lo stato UI `isUploading` con loader animato. Creato `.env.example` per configurare `VITE_ELEVENLABS_API_KEY`.
+
+- [2026-05-09/21:26]: Miglioramento UX Trascrizione e View Reale
+  - *Details*: Aggiunto un feedback visivo immediato per ogni singolo file in fase di upload. Ora i file audio appaiono subito in lista con uno stato dedicato ("Trascrizione in corso..."). Inoltre, nella vista del documento (Lettore), il lorem ipsum è stato rimosso per mostrare la trascrizione reale generata dall'API.
+  - *Tech Notes*: Refactoring di `processFiles` in `App.jsx` per l'inserimento di placeholder asincroni. Aggiornato il rendering condizionale in `preview-item` basato su `file.isTranscribing`. Modificata la vista `read_file` per fare render di `currentFile.content` se disponibile.

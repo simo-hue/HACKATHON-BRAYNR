@@ -153,6 +153,94 @@ function App() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]);
   const [checkedSubjects, setCheckedSubjects] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
+
+  const processFiles = async (files) => {
+    setIsUploading(true);
+    
+    // First, create placeholders for all files
+    const filePlaceholders = Array.from(files).map((f, idx) => {
+      const isMedia = f.type.startsWith('audio/') || f.type.startsWith('video/');
+      return {
+        id: Date.now() + idx,
+        originalFile: f,
+        name: isMedia ? f.name : f.name,
+        type: isMedia ? 'media' : (f.name.split('.').pop() || 'file'),
+        difficulty: 'medio',
+        pages: 0,
+        words: 0,
+        isTranscribing: isMedia,
+        error: false
+      };
+    });
+
+    // Add them to state immediately so the user sees them
+    setUploadFiles(prev => [...prev, ...filePlaceholders]);
+
+    for (const placeholder of filePlaceholders) {
+      if (placeholder.isTranscribing) {
+        try {
+          const formData = new FormData();
+          formData.append('file', placeholder.originalFile);
+          formData.append('model_id', 'scribe_v1');
+          
+          const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+            method: 'POST',
+            headers: {
+              'xi-api-key': import.meta.env.VITE_ELEVENLABS_API_KEY
+            },
+            body: formData
+          });
+          
+          if (!response.ok) {
+            throw new Error(`ElevenLabs API error: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          const txtFileName = placeholder.originalFile.name.replace(/\.[^/.]+$/, "") + ".txt";
+          
+          setUploadFiles(prev => prev.map(f => {
+            if (f.id === placeholder.id) {
+              return {
+                ...f,
+                name: txtFileName,
+                type: 'txt',
+                pages: Math.ceil((data.text.split(' ').length || 1) / 300),
+                words: data.text.split(' ').length || 0,
+                content: data.text,
+                isTranscribing: false
+              };
+            }
+            return f;
+          }));
+        } catch (error) {
+          console.error("Transcription failed:", error);
+          setUploadFiles(prev => prev.map(f => {
+            if (f.id === placeholder.id) {
+              return {
+                ...f,
+                isTranscribing: false,
+                error: true
+              };
+            }
+            return f;
+          }));
+        }
+      } else {
+        setUploadFiles(prev => prev.map(f => {
+          if (f.id === placeholder.id) {
+            return {
+              ...f,
+              pages: Math.floor(Math.random() * 40) + 10,
+              words: Math.floor(Math.random() * 10000) + 2000
+            };
+          }
+          return f;
+        }));
+      }
+    }
+    setIsUploading(false);
+  };
 
   // Study Mode State
   const [studyState, setStudyState] = useState({
@@ -382,10 +470,11 @@ function App() {
       
       const formattedFiles = uploadFiles.map(f => ({ 
         name: f.name, 
-        type: "pdf",
+        type: f.type || "pdf",
         difficulty: f.difficulty,
         pages: f.pages,
-        words: f.words
+        words: f.words,
+        content: f.content
       }));
       updated[targetFolder] = [...updated[targetFolder], ...formattedFiles];
       return updated;
@@ -459,24 +548,12 @@ function App() {
   const onDrop = useCallback((e) => {
     e.preventDefault(); e.stopPropagation(); setIsDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const newFiles = Array.from(e.dataTransfer.files).map(f => ({
-        name: f.name,
-        difficulty: 'medio',
-        pages: Math.floor(Math.random() * 40) + 10,
-        words: Math.floor(Math.random() * 10000) + 2000
-      }));
-      setUploadFiles(prev => [...prev, ...newFiles]);
+      processFiles(e.dataTransfer.files);
     }
-  }, []);
+  }, []); // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleFileInput = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files).map(f => ({
-        name: f.name,
-        difficulty: 'medio',
-        pages: Math.floor(Math.random() * 40) + 10,
-        words: Math.floor(Math.random() * 10000) + 2000
-      }));
-      setUploadFiles(prev => [...prev, ...newFiles]);
+      processFiles(e.target.files);
     }
   };
 
@@ -765,13 +842,24 @@ function App() {
                   <h2 style={{margin: 0}}>{currentFile?.name}</h2>
                 </div>
                 <div className="reader-content">
-                  <h3>Introduzione</h3>
-                  <p>Questo è il contenuto del file <strong>{currentFile?.name}</strong>. In un'applicazione reale, qui verrebbe renderizzato il PDF o il documento selezionato.</p>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-                  <h3>Concetti Chiave</h3>
-                  <p>1. **Analisi del Testo**: L'IA ha estratto le parole chiave e i concetti fondamentali per generare flashcard e mappe mentali.</p>
-                  <p>2. **Difficoltà**: Questo file è stato classificato come <strong>{currentFile?.difficulty || 'medio'}</strong>, il che influisce sulla stima del tempo di studio.</p>
-                  <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.</p>
+                  {currentFile?.content ? (
+                    <>
+                      <h3>Trascrizione Audio</h3>
+                      <div className="transcription-box" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', marginTop: '1rem' }}>
+                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0 }}>{currentFile.content}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3>Introduzione</h3>
+                      <p>Questo è il contenuto del file <strong>{currentFile?.name}</strong>. In un'applicazione reale, qui verrebbe renderizzato il PDF o il documento selezionato.</p>
+                      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+                      <h3>Concetti Chiave</h3>
+                      <p>1. **Analisi del Testo**: L'IA ha estratto le parole chiave e i concetti fondamentali per generare flashcard e mappe mentali.</p>
+                      <p>2. **Difficoltà**: Questo file è stato classificato come <strong>{currentFile?.difficulty || 'medio'}</strong>, il che influisce sulla stima del tempo di studio.</p>
+                      <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.</p>
+                    </>
+                  )}
                   
                   <div style={{marginTop: '2rem', display: 'flex', justifyContent: 'center'}}>
                     <button className="btn-save" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setCreateQuestionState({...createQuestionState, isOpen: true})}>
@@ -1047,8 +1135,16 @@ function App() {
                   <h2>{isDragActive ? 'Rilascia i file qui...' : 'Trascina e rilascia i tuoi file'}</h2>
                   <p>Aggiungi risorse a <strong>{newSubjectName || currentFolder}</strong>. Supportiamo PDF, Word, PPT, immagini, audio e video.</p>
                   
-                  <input type="file" id="file-upload" style={{ display: 'none' }} multiple onChange={handleFileInput} />
-                  <label htmlFor="file-upload" className="btn-upload">Seleziona dal computer</label>
+                  <input type="file" id="file-upload" style={{ display: 'none' }} multiple onChange={handleFileInput} disabled={isUploading} />
+                  <label htmlFor="file-upload" className="btn-upload" style={{ opacity: isUploading ? 0.7 : 1, pointerEvents: isUploading ? 'none' : 'auto' }}>
+                    {isUploading ? 'Elaborazione in corso...' : 'Seleziona dal computer'}
+                  </label>
+                  {isUploading && (
+                    <div style={{ marginTop: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                      <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                      <span>Trascrizione audio in corso con ElevenLabs...</span>
+                    </div>
+                  )}
 
                   <AnimatePresence>
                     {uploadFiles.length > 0 && (
@@ -1061,7 +1157,15 @@ function App() {
                                 <FileIcon size={20} color="#a5b4fc" />
                                 <div>
                                   <span style={{display: 'block', fontWeight: 500}}>{file.name}</span>
-                                  <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{file.pages} pag. • {file.words} parole</span>
+                                  {file.isTranscribing ? (
+                                    <span style={{fontSize: '0.75rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                                      <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Trascrizione in corso...
+                                    </span>
+                                  ) : file.error ? (
+                                    <span style={{fontSize: '0.75rem', color: '#ef4444'}}>Errore nella trascrizione</span>
+                                  ) : (
+                                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{file.pages} pag. • {file.words} parole</span>
+                                  )}
                                 </div>
                               </div>
                               <div className="difficulty-selector">
@@ -1078,8 +1182,8 @@ function App() {
                             </div>
                           ))}
                         </div>
-                        <button className="btn-start-analysis" onClick={handleSaveUploadAndGoToGoals}>
-                          Salva e Continua
+                        <button className="btn-start-analysis" onClick={handleSaveUploadAndGoToGoals} disabled={isUploading} style={{ opacity: isUploading ? 0.5 : 1 }}>
+                          {isUploading ? 'Attendere...' : 'Salva e Continua'}
                         </button>
                       </motion.div>
                     )}
