@@ -131,3 +131,35 @@
 - [2026-05-09/21:35]: Integrazione Trascrizione Vocale Real-time con ElevenLabs
   - *Details*: Implementata la registrazione vocale reale per le Domande Aperte (QA) nella modalità "Studia". Quando l'utente preme il microfono, il sistema richiede l'accesso al dispositivo, registra l'audio in formato WebM e, al termine, lo invia all'API ElevenLabs Scribe per generare la trascrizione reale dell'utente.
   - *Tech Notes*: Sostituito il timer mock in `handleMicClick` all'interno di `App.jsx` utilizzando le API native del browser (`navigator.mediaDevices.getUserMedia` e `MediaRecorder`). L'audio campionato viene racchiuso in un `Blob` e inviato asincronamente all'endpoint `v1/speech-to-text`, integrando il medesimo flusso usato precedentemente per l'upload dei file. Aggiunti gli hook `useRef` per la persistenza del `MediaRecorder` senza triggerare render.
+
+- [2026-05-09/21:58]: UI Valutazione IA Multicategoria (Feedback QA)
+  - *Details*: Migliorata drasticamente la componente visiva del feedback dell'IA dopo la registrazione di una risposta orale. Invece di un semplice testo, ora il sistema simula una valutazione analitica multicategoria (Coerenza, Fluidità, Precisione Lessicale, Completezza) visualizzata con grafici a barre eleganti.
+  - *Tech Notes*: Modificata la funzione `handleEvaluateAudio` in `App.jsx` per generare un oggetto feedback complesso (`general` e `categories`). Sostituito il layout monolitico del `.ai-feedback-box` con una struttura a colonna contenente un grid `auto-fit` per le progress-bar di ogni metrica. Resa dinamica la colorazione delle barre.
+
+- [2026-05-09/22:00]: Navigazione Calendario e Generazione Dinamica
+  - *Details*: Implementata la navigazione nel calendario tramite i pulsanti freccia (avanti/indietro) e il pulsante "Oggi". La griglia dei giorni non è più hardcoded ma viene generata dinamicamente in base al mese e all'anno selezionati.
+  - *Tech Notes*: Modificato `App.jsx`. Aggiunto lo stato `calendarDate` e la funzione helper `getCalendarDays` per calcolare i giorni del mese allineati alla settimana (Lunedì-Domenica). Aggiornata la vista `calendar` per usare queste nuove logiche e gestire l'evidenziazione del giorno corrente in modo dinamico.
+
+- [2026-05-09/22:04]: Refactoring Architettura Upload File (Chunking e Subfolder)
+  - *Details*: Modificato drasticamente il flusso di caricamento. Ora, quando si aggiunge un file, il sistema non lo inserisce in modo lineare nella cartella della materia, ma crea dinamicamente 5 sottocartelle ("Capitolo 1" a "Capitolo 5"). Il file caricato viene quindi spezzettato in 5 chunk e ogni porzione viene assegnata a una subdirectory diversa. È stata aggiunta un'interfaccia di navigazione a più livelli (Materia -> Sottocartella -> Chunk).
+  - *Tech Notes*: Modificato `handleSaveUploadAndGoToGoals` in `App.jsx` per generare gli oggetti `isFolder: true` e splittare il payload `f.content` (e metadati proporzionali, come pagine/parole). Aggiunto lo stato `currentSubFolder` per consentire il drill-down all'interno della vista cartella. Aggiornati i contatori di risorse nella home e la UI di `currentView === 'folder'` per renderizzare condizionalmente le icone directory e la header di "ritorno" alla cartella root.
+
+- [2026-05-09/22:07]: Refactoring Architettura Quiz (Studio Ancorato alle Sottocartelle)
+  - *Details*: Modificato il livello gerarchico in cui avviene lo studio. Le flashcard e le domande aperte create durante la lettura di un chunk vengono ora salvate all'interno dello scope della sua sottocartella (es. "Capitolo 1"), invece che alla radice della materia. Il pulsante "Studia" è stato rimosso dai singoli file ed è stato spostato al livello della sottocartella.
+  - *Tech Notes*: Modificata la struttura chiave di `subjectQuestions` passando da `currentFolder` a `${currentFolder}/${currentSubFolder}` per isolare il pool di domande per argomento. Aggiornato `handleCreateQuestion` per ereditare la sottocartella corretta. Rimossi i pulsanti di avvio studio (`handleStudyFile`) sui singoli chunk in `App.jsx` e inserito un nuovo pulsante `handleStudyFolder` sulle card directory per raggruppare le sessioni.
+
+- [2026-05-09/22:08]: Integrazione Lettura Reale per File di Testo
+  - *Details*: Aggiornata la logica di caricamento dei file. Ora, se si caricano file `.txt` o file di tipo testuale (`text/*`), il loro contenuto viene letto e importato realmente. I file audio/video continuano a passare da ElevenLabs per la trascrizione, mentre per i file binari generici (es. PDF complessi) viene ancora utilizzata la stringa di mock di base per evitare freeze del browser.
+  - *Tech Notes*: Modificato `processFiles` in `App.jsx`. Inserita l'istanziazione nativa di `FileReader` e del metodo asincrono `readAsText()` all'interno dell'else branch per i file non-transcribing. Aggiornate le metriche `pages` e `words` basandosi sul reale volume del testo ingerito tramite split.
+
+- [2026-05-09/22:10]: Rimozione Progetti Senza Nome
+  - *Details*: Aggiunta una logica di cleanup in fase di inizializzazione dello stato per `fileSystem` e `goals`. Ora rimuove automaticamente qualsiasi chiave vuota o composta solo da spazi, risolvendo il problema dei progetti "senza nome" salvati nel `localStorage`.
+  - *Tech Notes*: Modificato `App.jsx` aggiungendo l'iterazione `Object.keys().forEach()` con `delete` per le chiavi non valide durante il caricamento dei dati.
+
+- [2026-05-09/22:25]: Sostituzione Difficoltà con Tipologia File
+  - *Details*: Sostituita la label della difficoltà con la tipologia del file durante il caricamento. L'utente può ora scegliere tra "Personal Notes" (note/appunti) e "Official Documentation" (documentazione ufficiale).
+  - *Tech Notes*: Modificati `App.jsx` e `App.css`. Aggiornato il selettore nella vista di upload e la visualizzazione del badge nella lista dei file. Aggiunti stili CSS per le nuove classi `.notes` e `.documentation`.
+
+- [2026-05-09/22:30]: Full Translation to English
+  - *Details*: Translated all user-facing text from Italian to English, including sidebar, calendar, upload section, goals, and statistics views.
+  - *Tech Notes*: Modified `App.jsx`. Updated locale strings to `en-US` for date formatting and translated all hardcoded Italian strings in JSX.

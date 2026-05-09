@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Brain, 
-  Home, 
-  Target, 
-  BarChart2, 
-  Settings, 
+import {
+  Brain,
+  Home,
+  Target,
+  BarChart2,
+  Settings,
   LogOut,
   UploadCloud,
   FileText,
@@ -56,18 +56,41 @@ const getSubjectColor = (subject) => {
   return palette[Math.abs(hash) % palette.length];
 };
 
+const getCalendarDays = (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const startDay = (firstDay.getDay() + 6) % 7; // Monday = 0
+  const daysInMonth = lastDay.getDate();
+
+  const days = [];
+  for (let i = 0; i < startDay; i++) {
+    days.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(i);
+  }
+  while (days.length < 42) {
+    days.push(null);
+  }
+  return days;
+};
+
 function App() {
   // Navigation & Hierarchy State
   const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal', 'statistiche', 'read_file', 'study_mode', 'calendar'
   const [currentFolder, setCurrentFolder] = useState(null);
+  const [currentSubFolder, setCurrentSubFolder] = useState(null);
   const [newSubjectName, setNewSubjectName] = useState('');
   const [previousView, setPreviousView] = useState(null);
   const [currentFile, setCurrentFile] = useState(null);
-  
+
   // Mock File System State
   const [fileSystem, setFileSystem] = useState(() => {
     const saved = localStorage.getItem('fileSystem');
-    return saved ? JSON.parse(saved) : {
+    let data = saved ? JSON.parse(saved) : {
       "Intelligenza Artificiale": [
         { name: "Lezione 1 - Intro.pdf", type: "pdf", pages: 12, words: 2500, difficulty: 'semplice' },
         { name: "Reti Neurali.docx", type: "doc", pages: 25, words: 6000, difficulty: 'difficile' }
@@ -79,12 +102,17 @@ function App() {
       "Basi di Dati": [],
       "Diritto Privato": []
     };
+    // Cleanup empty keys
+    Object.keys(data).forEach(key => {
+      if (!key.trim()) delete data[key];
+    });
+    return data;
   });
 
   // Goals State
   const [goals, setGoals] = useState(() => {
     const saved = localStorage.getItem('goals');
-    return saved ? JSON.parse(saved) : {
+    let data = saved ? JSON.parse(saved) : {
       "Intelligenza Artificiale": {
         deadline: "2026-06-15",
         dailyHours: 2,
@@ -110,6 +138,11 @@ function App() {
         progress: 100
       }
     };
+    // Cleanup empty keys
+    Object.keys(data).forEach(key => {
+      if (!key.trim()) delete data[key];
+    });
+    return data;
   });
 
   // Stats & Adherence State
@@ -146,6 +179,7 @@ function App() {
   });
   const [viewingGoal, setViewingGoal] = useState(null);
   const [folderToDelete, setFolderToDelete] = useState(null);
+  const [calendarDate, setCalendarDate] = useState(new Date(2026, 4, 1)); // May 2026
 
   const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
@@ -157,7 +191,7 @@ function App() {
 
   const processFiles = async (files) => {
     setIsUploading(true);
-    
+
     // First, create placeholders for all files
     const filePlaceholders = Array.from(files).map((f, idx) => {
       const isMedia = f.type.startsWith('audio/') || f.type.startsWith('video/');
@@ -166,7 +200,7 @@ function App() {
         originalFile: f,
         name: isMedia ? f.name : f.name,
         type: isMedia ? 'media' : (f.name.split('.').pop() || 'file'),
-        difficulty: 'medio',
+        difficulty: 'notes',
         pages: 0,
         words: 0,
         isTranscribing: isMedia,
@@ -183,7 +217,7 @@ function App() {
           const formData = new FormData();
           formData.append('file', placeholder.originalFile);
           formData.append('model_id', 'scribe_v1');
-          
+
           const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
             method: 'POST',
             headers: {
@@ -191,14 +225,14 @@ function App() {
             },
             body: formData
           });
-          
+
           if (!response.ok) {
             throw new Error(`ElevenLabs API error: ${response.statusText}`);
           }
-          
+
           const data = await response.json();
           const txtFileName = placeholder.originalFile.name.replace(/\.[^/.]+$/, "") + ".txt";
-          
+
           setUploadFiles(prev => prev.map(f => {
             if (f.id === placeholder.id) {
               return {
@@ -227,12 +261,29 @@ function App() {
           }));
         }
       } else {
+        let extractedContent = "Questo è il contenuto simulato per il file: " + placeholder.originalFile.name;
+
+        if (placeholder.originalFile && (placeholder.originalFile.type.startsWith('text/') || placeholder.originalFile.name.endsWith('.txt'))) {
+          try {
+            const text = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target.result);
+              reader.onerror = (e) => reject(e);
+              reader.readAsText(placeholder.originalFile);
+            });
+            extractedContent = text;
+          } catch (e) {
+            console.error("Failed to read text file", e);
+          }
+        }
+
         setUploadFiles(prev => prev.map(f => {
           if (f.id === placeholder.id) {
             return {
               ...f,
-              pages: Math.floor(Math.random() * 40) + 10,
-              words: Math.floor(Math.random() * 10000) + 2000
+              pages: Math.max(1, Math.ceil(extractedContent.split(/\s+/).length / 300)),
+              words: extractedContent.split(/\s+/).length || 0,
+              content: extractedContent
             };
           }
           return f;
@@ -293,10 +344,10 @@ function App() {
   };
 
   const submitCheckIn = () => {
-    const atLeastOneStudied = yesterdaySubjects.length > 0 
+    const atLeastOneStudied = yesterdaySubjects.length > 0
       ? yesterdaySubjects.some(s => checkedSubjects[s])
       : checkedSubjects['general'];
-    
+
     handleCheckIn(atLeastOneStudied);
   };
   const handleDeleteFolder = (e, folderName) => {
@@ -343,8 +394,9 @@ function App() {
   };
 
   // Study Logic Handlers
-  const currentSubjectFlashcards = subjectQuestions[currentFolder]?.flashcards || [];
-  const currentSubjectQA = subjectQuestions[currentFolder]?.qa || [];
+  const subjectKey = currentSubFolder ? `${currentFolder}/${currentSubFolder}` : currentFolder;
+  const currentSubjectFlashcards = subjectQuestions[subjectKey]?.flashcards || [];
+  const currentSubjectQA = subjectQuestions[subjectKey]?.qa || [];
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -370,12 +422,12 @@ function App() {
 
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          
+
           try {
             const formData = new FormData();
             formData.append('file', audioBlob, 'recording.webm');
             formData.append('model_id', 'scribe_v1');
-            
+
             const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
               method: 'POST',
               headers: {
@@ -383,27 +435,27 @@ function App() {
               },
               body: formData
             });
-            
+
             if (!response.ok) {
               throw new Error(`ElevenLabs API error: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             setStudyState(prev => ({
-              ...prev, 
+              ...prev,
               isProcessing: false,
               transcript: data.text || "Trascrizione non riuscita o audio vuoto.",
             }));
           } catch (err) {
             console.error("Transcription failed", err);
             setStudyState(prev => ({
-              ...prev, 
+              ...prev,
               isProcessing: false,
               transcript: "Errore durante la trascrizione dell'audio.",
             }));
           }
-          
+
           stream.getTracks().forEach(track => track.stop());
         };
 
@@ -420,10 +472,18 @@ function App() {
     setStudyState({ ...studyState, isProcessing: true });
     setTimeout(() => {
       setStudyState(prev => ({
-        ...prev, 
+        ...prev,
         isProcessing: false,
-        feedback: "Feedback IA simulato: Ottima spiegazione, concetti chiari! Ricorda solo di approfondire leggermente il contesto.",
-        score: Math.floor(Math.random() * 30) + 70 // Random score between 70 and 100
+        feedback: {
+          general: "Ottima spiegazione, concetti chiari! Hai centrato il punto. Ricorda solo di approfondire leggermente il contesto storico o l'applicazione pratica per renderla perfetta.",
+          categories: [
+            { name: "Coerenza", score: Math.floor(Math.random() * 20) + 80, color: '#10b981' },
+            { name: "Fluidità", score: Math.floor(Math.random() * 30) + 70, color: '#3b82f6' },
+            { name: "Precisione Lessicale", score: Math.floor(Math.random() * 25) + 75, color: '#8b5cf6' },
+            { name: "Completezza", score: Math.floor(Math.random() * 40) + 60, color: '#f59e0b' },
+          ]
+        },
+        score: Math.floor(Math.random() * 20) + 80 // Random score between 80 and 100
       }));
     }, 2000);
   };
@@ -449,7 +509,7 @@ function App() {
     if (!createQuestionState.q.trim()) return;
 
     setSubjectQuestions(prev => {
-      const subject = currentFolder;
+      const subject = currentSubFolder ? `${currentFolder}/${currentSubFolder}` : currentFolder;
       const updated = { ...prev };
       if (!updated[subject]) {
         updated[subject] = { flashcards: [], qa: [] };
@@ -469,7 +529,8 @@ function App() {
   const navigateToHome = () => {
     setCurrentView('home');
     setCurrentFolder(null);
-    setUploadFiles([]);
+    setCurrentSubFolder(null);
+    setNewSubjectName('');
     setNewSubjectName('');
     setPreviousView(null);
   };
@@ -516,22 +577,41 @@ function App() {
 
   const handleSaveUploadAndGoToGoals = () => {
     const targetFolder = currentView === 'upload_files' ? newSubjectName : currentFolder;
-    
+
     setFileSystem(prev => {
       const updated = { ...prev };
       if (!updated[targetFolder]) {
         updated[targetFolder] = [];
       }
-      
-      const formattedFiles = uploadFiles.map(f => ({ 
-        name: f.name, 
-        type: f.type || "pdf",
-        difficulty: f.difficulty,
-        pages: f.pages,
-        words: f.words,
-        content: f.content
-      }));
-      updated[targetFolder] = [...updated[targetFolder], ...formattedFiles];
+
+      let existingSubFolders = updated[targetFolder].filter(item => item.isFolder);
+      if (existingSubFolders.length === 0) {
+        for (let i = 1; i <= 5; i++) {
+          updated[targetFolder].push({
+            isFolder: true,
+            name: `Capitolo ${i}`,
+            files: []
+          });
+        }
+        existingSubFolders = updated[targetFolder].filter(item => item.isFolder);
+      }
+
+      uploadFiles.forEach(f => {
+        const contentStr = f.content || "Contenuto del file elaborato...";
+        const chunkSize = Math.ceil(contentStr.length / 5) || 1;
+
+        for (let i = 0; i < 5; i++) {
+          const chunkStr = contentStr.slice(i * chunkSize, (i + 1) * chunkSize);
+          existingSubFolders[i].files.push({
+            name: `${f.name} - Parte ${i + 1}`,
+            type: f.type || "pdf",
+            difficulty: f.difficulty,
+            pages: Math.ceil((f.pages || 1) / 5) || 1,
+            words: Math.ceil((f.words || 1) / 5) || 1,
+            content: chunkStr
+          });
+        }
+      });
       return updated;
     });
 
@@ -549,7 +629,7 @@ function App() {
         [currentFolder]: { ...tempGoal, progress: prev[currentFolder]?.progress || 0 }
       }));
     }
-    
+
     if (previousView === 'obiettivi') {
       setCurrentView('obiettivi');
     } else {
@@ -572,7 +652,7 @@ function App() {
       const isSelected = prev.daysOfWeek.includes(day);
       return {
         ...prev,
-        daysOfWeek: isSelected 
+        daysOfWeek: isSelected
           ? prev.daysOfWeek.filter(d => d !== day)
           : [...prev.daysOfWeek, day]
       };
@@ -586,6 +666,14 @@ function App() {
 
   const handleStudyFile = (file) => {
     setCurrentFile(file);
+    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null });
+    setCurrentView('study_mode');
+  };
+
+  const handleStudyFolder = (e, folderItem) => {
+    e.stopPropagation();
+    setCurrentSubFolder(folderItem.name);
+    setCurrentFile({ name: folderItem.name });
     setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null });
     setCurrentView('study_mode');
   };
@@ -622,11 +710,11 @@ function App() {
     <div className="app-container">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="brand" onClick={navigateToHome} style={{cursor: 'pointer'}}>
+        <div className="brand" onClick={navigateToHome} style={{ cursor: 'pointer' }}>
           <Brain className="brand-icon" />
           Braynr
         </div>
-        
+
         <nav className="nav-menu">
           <a onClick={navigateToHome} className={`nav-item ${['home', 'folder', 'read_file', 'study_mode'].includes(currentView) ? 'active' : ''}`}>
             <Home size={20} />
@@ -634,30 +722,30 @@ function App() {
           </a>
           <a onClick={handleStartCreate} className={`nav-item ${['create_name', 'upload_files'].includes(currentView) ? 'active' : ''}`}>
             <UploadCloud size={20} />
-            <span>Inserisci Fonti</span>
+            <span>Insert Sources</span>
           </a>
           <a onClick={navigateToObiettivi} className={`nav-item ${['obiettivi', 'select_subject_for_goal', 'set_goals'].includes(currentView) && previousView !== null ? 'active' : currentView === 'obiettivi' ? 'active' : ''}`}>
             <Target size={20} />
-            <span>Obiettivi</span>
+            <span>Goals</span>
           </a>
           <a onClick={navigateToCalendar} className={`nav-item ${currentView === 'calendar' ? 'active' : ''}`}>
             <CalendarDays size={20} />
-            <span>Calendario</span>
+            <span>Calendar</span>
           </a>
           <a onClick={navigateToStatistiche} className={`nav-item ${currentView === 'statistiche' ? 'active' : ''}`}>
             <BarChart2 size={20} />
-            <span>Statistiche</span>
+            <span>Statistics</span>
           </a>
         </nav>
 
         <div className="nav-menu" style={{ flexGrow: 0, marginTop: 'auto' }}>
           <a className="nav-item">
             <Settings size={20} />
-            <span>Impostazioni</span>
+            <span>Settings</span>
           </a>
           <a className="nav-item">
             <LogOut size={20} />
-            <span>Esci</span>
+            <span>Logout</span>
           </a>
         </div>
       </aside>
@@ -668,87 +756,87 @@ function App() {
           <div className="greeting">
             {currentView === 'home' && (
               <>
-                <h1>Il tuo Knowledge</h1>
-                <p>Seleziona una materia per studiare o aggiungi nuove fonti.</p>
+                <h1>your collections</h1>
+                <p>Select a subject to study or add new sources.</p>
               </>
             )}
             {currentView === 'folder' && (
-              <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button onClick={navigateToHome} className="btn-back">
                   <ArrowLeft size={20} />
                 </button>
                 <div>
                   <h1>{currentFolder}</h1>
-                  <p>I tuoi documenti e appunti per questa materia.</p>
+                  <p>Your documents and notes for this subject.</p>
                 </div>
               </div>
             )}
             {currentView === 'create_name' && (
               <>
-                <h1>Crea Nuova Materia</h1>
-                <p>Dai un nome alla materia prima di caricare i materiali.</p>
+                <h1>Create New Subject</h1>
+                <p>Give the subject a name before uploading materials.</p>
               </>
             )}
             {currentView === 'upload_files' && (
               <>
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
-                  <span>Creazione materia</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
+                  <span>Subject creation</span>
                   <ChevronRight size={16} />
-                  <span style={{color: 'var(--text-main)'}}>{newSubjectName}</span>
+                  <span style={{ color: 'var(--text-main)' }}>{newSubjectName}</span>
                 </div>
-                <h1>Aggiungi le fonti</h1>
-                <p>Carica PDF, slide, appunti, audio o video per iniziare a studiare.</p>
+                <h1>Add sources</h1>
+                <p>Upload PDFs, slides, notes, audio or video to start studying.</p>
               </>
             )}
             {currentView === 'set_goals' && (
               <>
                 {previousView === 'obiettivi' ? (
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
-                    <span>Obiettivi</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
+                    <span>Goals</span>
                     <ChevronRight size={16} />
-                    <span style={{color: 'var(--text-main)'}}>{currentFolder}</span>
+                    <span style={{ color: 'var(--text-main)' }}>{currentFolder}</span>
                   </div>
                 ) : (
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
-                    <span>Creazione materia</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
+                    <span>Subject creation</span>
                     <ChevronRight size={16} />
-                    <span>Upload Fonti</span>
+                    <span>Source Upload</span>
                     <ChevronRight size={16} />
-                    <span style={{color: 'var(--text-main)'}}>Obiettivi</span>
+                    <span style={{ color: 'var(--text-main)' }}>Goals</span>
                   </div>
                 )}
-                
-                <h1>{previousView === 'obiettivi' ? 'Modifica o Imposta Obiettivi' : 'Imposta Obiettivi di Studio'}</h1>
-                <p>Pianifica lo studio per <strong>{currentFolder}</strong>.</p>
+
+                <h1>{previousView === 'obiettivi' ? 'Edit or Set Goals' : 'Set Study Goals'}</h1>
+                <p>Plan your study for <strong>{currentFolder}</strong>.</p>
               </>
             )}
             {currentView === 'select_subject_for_goal' && (
               <>
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
-                  <span style={{cursor: 'pointer'}} onClick={navigateToObiettivi}>Obiettivi</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
+                  <span style={{ cursor: 'pointer' }} onClick={navigateToObiettivi}>Goals</span>
                   <ChevronRight size={16} />
-                  <span style={{color: 'var(--text-main)'}}>Seleziona Materia</span>
+                  <span style={{ color: 'var(--text-main)' }}>Select Subject</span>
                 </div>
-                <h1>Aggiungi un nuovo Obiettivo</h1>
-                <p>Per quale materia vuoi configurare il piano di studio?</p>
+                <h1>Add a new Goal</h1>
+                <p>For which subject do you want to configure the study plan?</p>
               </>
             )}
             {currentView === 'obiettivi' && (
               <>
-                <h1>I tuoi Obiettivi</h1>
-                <p>Gestisci le tue scadenze e ritmi di studio per ogni materia.</p>
+                <h1>Your Goals</h1>
+                <p>Manage your deadlines and study pace for each subject.</p>
               </>
             )}
             {currentView === 'statistiche' && (
               <>
-                <h1>Statistiche e Progressi</h1>
-                <p>Monitora i tuoi risultati e la costanza nello studio.</p>
+                <h1>Statistics and Progress</h1>
+                <p>Monitor your results and consistency in studying.</p>
               </>
             )}
             {currentView === 'study_mode' && (
               <>
-                <h1>Modalità Studio Attivo</h1>
-                <p>Mettiti alla prova sulle fonti caricate e ricevi feedback immediato.</p>
+                <h1>Active Study Mode</h1>
+                <p>Test yourself on the uploaded sources and receive immediate feedback.</p>
               </>
             )}
           </div>
@@ -758,9 +846,9 @@ function App() {
               <Bell size={24} />
               <span className="badge-dot"></span>
             </button>
-            <img 
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" 
-              alt="Profilo Utente" 
+            <img
+              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
+              alt="User Profile"
               className="user-avatar"
             />
           </div>
@@ -772,10 +860,10 @@ function App() {
               <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}>
                 <div className="modal-header">
                   <Activity size={32} color="var(--primary)" />
-                  <h3>Check-in Giornaliero</h3>
+                  <h3>Daily Check-in</h3>
                 </div>
                 <div className="modal-body">
-                  <p>Quali materie sei riuscito a studiare ieri?</p>
+                  <p>Which subjects did you manage to study yesterday?</p>
                   <div className="checkin-subjects-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', margin: '1.5rem 0' }}>
                     {yesterdaySubjects.length > 0 ? (
                       yesterdaySubjects.map(subject => (
@@ -787,14 +875,14 @@ function App() {
                     ) : (
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', background: 'rgba(255,255,255,0.02)' }}>
                         <input type="checkbox" checked={checkedSubjects['general'] || false} onChange={() => toggleCheckedSubject('general')} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
-                        <span style={{ fontSize: '1rem' }}>Ho studiato comunque extra-piano</span>
+                        <span style={{ fontSize: '1rem' }}>I studied anyway outside the plan</span>
                       </label>
                     )}
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button onClick={() => { handleCheckIn(false); }} className="btn-checkin no"><XCircle size={18} /> Non ho studiato affatto</button>
-                  <button onClick={submitCheckIn} className="btn-checkin yes"><CheckCircle size={18} /> Salva Risposte</button>
+                  <button onClick={() => { handleCheckIn(false); }} className="btn-checkin no"><XCircle size={18} /> I didn't study at all</button>
+                  <button onClick={submitCheckIn} className="btn-checkin yes"><CheckCircle size={18} /> Save Answers</button>
                 </div>
               </motion.div>
             </div>
@@ -813,15 +901,15 @@ function App() {
                       <Folder size={32} />
                     </div>
                     <h3>{folderName}</h3>
-                    <p>{fileSystem[folderName].length} risorse</p>
+                    <p>{fileSystem[folderName].reduce((acc, curr) => curr.isFolder ? acc + curr.files.length : acc + 1, 0)} resources</p>
                   </motion.div>
                 ))}
-                
+
                 <motion.div className="folder-card add-card" whileHover={{ y: -5, scale: 1.02 }} onClick={handleStartCreate}>
                   <div className="add-icon-bg">
                     <Plus size={36} />
                   </div>
-                  <h3>Nuova Materia</h3>
+                  <h3>New Subject</h3>
                 </motion.div>
 
                 {folderToDelete && (
@@ -829,15 +917,15 @@ function App() {
                     <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} onClick={(e) => e.stopPropagation()}>
                       <div className="modal-header">
                         <AlertTriangle size={32} color="#ef4444" />
-                        <h3>Elimina Materia</h3>
+                        <h3>Delete Subject</h3>
                       </div>
                       <div className="modal-body">
-                        <p>Sei sicuro di voler eliminare la materia <strong>{folderToDelete}</strong>?</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Tutti i file caricati e gli obiettivi associati verranno rimossi permanentemente. Questa azione non è reversibile.</p>
+                        <p>Are you sure you want to delete the subject <strong>{folderToDelete}</strong>?</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>All uploaded files and associated goals will be permanently removed. This action is irreversible.</p>
                       </div>
                       <div className="modal-footer" style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                        <button onClick={() => setFolderToDelete(null)} className="btn-skip" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}>Annulla</button>
-                        <button onClick={confirmDeleteFolder} className="btn-checkin no" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}><Trash2 size={18} /> Elimina</button>
+                        <button onClick={() => setFolderToDelete(null)} className="btn-skip" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}>Cancel</button>
+                        <button onClick={confirmDeleteFolder} className="btn-checkin no" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}><Trash2 size={18} /> Delete</button>
                       </div>
                     </motion.div>
                   </div>
@@ -848,41 +936,94 @@ function App() {
             {/* VIEW: FOLDER (Files inside) */}
             {currentView === 'folder' && (
               <motion.div key="folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
+                {currentSubFolder && (
+                  <div className="folder-header" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <button onClick={() => setCurrentSubFolder(null)} className="btn-back" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%' }}>
+                      <ArrowLeft size={20} />
+                    </button>
+                    <h2 style={{ margin: 0 }}>{currentSubFolder}</h2>
+                  </div>
+                )}
                 <div className="files-list">
-                  {fileSystem[currentFolder]?.map((file, idx) => (
-                    <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                      <div className="file-icon-bg">
-                        <FileText size={24} />
-                      </div>
-                      <div className="file-info">
-                        <h4>{file.name}</h4>
-                        <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
-                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} pag. • {file.words || 3000} parole</span>
-                          <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>
-                            {file.difficulty || 'medio'}
-                          </span>
+                  {!currentSubFolder ? (
+                    fileSystem[currentFolder]?.map((item, idx) => (
+                      item.isFolder ? (
+                        <motion.div key={idx} className="file-card" style={{ cursor: 'pointer', background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.2)' }} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} onClick={() => setCurrentSubFolder(item.name)}>
+                          <div className="file-icon-bg" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
+                            <Folder size={24} color="#8b5cf6" />
+                          </div>
+                          <div className="file-info">
+                            <h4>{item.name}</h4>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{item.files?.length || 0} fragments present</span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn-study" style={{ background: 'var(--primary)', color: 'white' }}>Open</button>
+                            <button className="btn-study" onClick={(e) => handleStudyFolder(e, item)}><Zap size={16} /> Study</button>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+                          <div className="file-icon-bg">
+                            <FileText size={24} />
+                          </div>
+                          <div className="file-info">
+                            <h4>{item.name}</h4>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{item.pages || 15} p. • {item.words || 3000} words</span>
+                              <span className={`difficulty-badge ${item.difficulty || 'notes'}`}>
+                                {item.difficulty === 'notes' ? 'Personal Notes' : 
+                                 item.difficulty === 'documentation' ? 'Official Documentation' : 
+                                 (item.difficulty || 'medio')}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn-read" onClick={() => handleReadFile(item)}>Read</button>
+                          </div>
+                        </motion.div>
+                      )
+                    ))
+                  ) : (
+                    fileSystem[currentFolder]?.find(f => f.name === currentSubFolder)?.files?.map((file, idx) => (
+                      <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+                        <div className="file-icon-bg">
+                          <FileText size={24} />
                         </div>
-                      </div>
-                      <div style={{display: 'flex', gap: '0.5rem'}}>
-                        <button className="btn-read" onClick={() => handleReadFile(file)}>Leggi</button>
-                        <button className="btn-study" onClick={() => handleStudyFile(file)}><Zap size={16} /> Studia</button>
-                      </div>
-                    </motion.div>
-                  ))}
-                  
-                  {fileSystem[currentFolder]?.length === 0 && (
+                        <div className="file-info">
+                          <h4>{file.name}</h4>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{file.pages || 15} p. • {file.words || 3000} words</span>
+                            <span className={`difficulty-badge ${file.difficulty || 'notes'}`}>
+                              {file.difficulty === 'notes' ? 'Personal Notes' : 
+                               file.difficulty === 'documentation' ? 'Official Documentation' : 
+                               (file.difficulty || 'medio')}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="btn-read" onClick={() => handleReadFile(file)}>Read</button>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+
+                  {((!currentSubFolder && fileSystem[currentFolder]?.length === 0) || (currentSubFolder && fileSystem[currentFolder]?.find(f => f.name === currentSubFolder)?.files?.length === 0)) && (
                     <div className="empty-state">
-                      Nessun file presente in questa materia.
+                      No files present in this {currentSubFolder ? 'subfolder' : 'subject'}.
                     </div>
                   )}
 
-                  <motion.div 
-                    className="file-card add-file-card"
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (fileSystem[currentFolder]?.length || 0) * 0.05 }}
-                    onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
-                  >
-                    <Plus size={24} /> Aggiungi altre risorse
-                  </motion.div>
+                  {!currentSubFolder && (
+                    <motion.div
+                      className="file-card add-file-card"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (fileSystem[currentFolder]?.length || 0) * 0.05 }}
+                      onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
+                    >
+                      <Plus size={24} /> Add more resources
+                    </motion.div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -891,64 +1032,64 @@ function App() {
             {currentView === 'read_file' && (
               <motion.div key="read_file" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="reader-container">
                 <div className="reader-header">
-                  <button onClick={() => setCurrentView('folder')} className="btn-back" style={{padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <button onClick={() => setCurrentView('folder')} className="btn-back" style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ArrowLeft size={20} />
                   </button>
-                  <h2 style={{margin: 0}}>{currentFile?.name}</h2>
+                  <h2 style={{ margin: 0 }}>{currentFile?.name}</h2>
                 </div>
                 <div className="reader-content">
                   {currentFile?.content ? (
                     <>
-                      <h3>Trascrizione Audio</h3>
+                      <h3>Audio Transcription</h3>
                       <div className="transcription-box" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', marginTop: '1rem' }}>
                         <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0 }}>{currentFile.content}</p>
                       </div>
                     </>
                   ) : (
                     <>
-                      <h3>Introduzione</h3>
-                      <p>Questo è il contenuto del file <strong>{currentFile?.name}</strong>. In un'applicazione reale, qui verrebbe renderizzato il PDF o il documento selezionato.</p>
+                      <h3>Introduction</h3>
+                      <p>This is the content of the file <strong>{currentFile?.name}</strong>. In a real application, the PDF or selected document would be rendered here.</p>
                       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-                      <h3>Concetti Chiave</h3>
-                      <p>1. **Analisi del Testo**: L'IA ha estratto le parole chiave e i concetti fondamentali per generare flashcard e mappe mentali.</p>
-                      <p>2. **Difficoltà**: Questo file è stato classificato come <strong>{currentFile?.difficulty || 'medio'}</strong>, il che influisce sulla stima del tempo di studio.</p>
+                      <h3>Key Concepts</h3>
+                      <p>1. **Text Analysis**: The AI extracted keywords and key concepts to generate flashcards and mind maps.</p>
+                      <p>2. **File Type**: This file is classified as <strong>{currentFile?.difficulty === 'notes' ? 'Personal Notes' : currentFile?.difficulty === 'documentation' ? 'Official Documentation' : (currentFile?.difficulty || 'Notes')}</strong>.</p>
                       <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.</p>
                     </>
                   )}
-                  
-                  <div style={{marginTop: '2rem', display: 'flex', justifyContent: 'center'}}>
-                    <button className="btn-save" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setCreateQuestionState({...createQuestionState, isOpen: true})}>
-                      <Plus size={18} /> Crea Flashcard / Domanda
+
+                  <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                    <button className="btn-save" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: true })}>
+                      <Plus size={18} /> Create Flashcard / Question
                     </button>
                   </div>
                 </div>
 
                 {createQuestionState.isOpen && (
-                  <div className="modal-overlay" onClick={() => setCreateQuestionState({...createQuestionState, isOpen: false})}>
+                  <div className="modal-overlay" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })}>
                     <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} onClick={(e) => e.stopPropagation()}>
                       <div className="modal-header">
                         <BrainCircuit size={32} color="var(--primary)" />
-                        <h3>Crea Domanda per il Testing</h3>
+                        <h3>Create Question for Testing</h3>
                       </div>
                       <div className="modal-body">
                         <div className="study-toggle" style={{ margin: '0 0 1.5rem 0', width: '100%', display: 'flex' }}>
-                          <button type="button" className={`toggle-btn ${createQuestionState.type === 'flashcards' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({...createQuestionState, type: 'flashcards'})}>Flashcard</button>
-                          <button type="button" className={`toggle-btn ${createQuestionState.type === 'qa' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({...createQuestionState, type: 'qa'})}>Domanda Aperta</button>
+                          <button type="button" className={`toggle-btn ${createQuestionState.type === 'flashcards' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({ ...createQuestionState, type: 'flashcards' })}>Flashcard</button>
+                          <button type="button" className={`toggle-btn ${createQuestionState.type === 'qa' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({ ...createQuestionState, type: 'qa' })}>Open Question</button>
                         </div>
                         <form onSubmit={handleCreateQuestion}>
                           <div className="form-group" style={{ marginBottom: '1rem' }}>
-                            <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Domanda</label>
-                            <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem' }} placeholder="Inserisci la domanda..." value={createQuestionState.q} onChange={e => setCreateQuestionState({...createQuestionState, q: e.target.value})} required />
+                            <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Question</label>
+                            <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem' }} placeholder="Enter the question..." value={createQuestionState.q} onChange={e => setCreateQuestionState({ ...createQuestionState, q: e.target.value })} required />
                           </div>
                           {createQuestionState.type === 'flashcards' && (
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
-                              <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Risposta (per te)</label>
-                              <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem' }} placeholder="Inserisci la risposta..." value={createQuestionState.a} onChange={e => setCreateQuestionState({...createQuestionState, a: e.target.value})} required />
+                              <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Answer (for you)</label>
+                              <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem' }} placeholder="Enter the answer..." value={createQuestionState.a} onChange={e => setCreateQuestionState({ ...createQuestionState, a: e.target.value })} required />
                             </div>
                           )}
                           <div className="modal-footer" style={{ marginTop: '2rem' }}>
-                            <button type="button" onClick={() => setCreateQuestionState({...createQuestionState, isOpen: false})} className="btn-skip">Annulla</button>
-                            <button type="submit" className="btn-save">Salva</button>
+                            <button type="button" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })} className="btn-skip">Cancel</button>
+                            <button type="submit" className="btn-save">Save</button>
                           </div>
                         </form>
                       </div>
@@ -961,23 +1102,23 @@ function App() {
             {/* VIEW: STUDY MODE */}
             {currentView === 'study_mode' && (
               <motion.div key="study_mode" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="study-container">
-                
+
                 <div className="study-header">
                   <button onClick={() => setCurrentView('folder')} className="btn-back">
                     <ArrowLeft size={20} />
                   </button>
                   <div>
-                    <span style={{color: 'var(--primary)', fontWeight: 600, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '1px'}}>Sessione in corso</span>
-                    <h2 style={{margin: '0.25rem 0 0 0'}}>{currentFile?.name}</h2>
+                    <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Session in progress</span>
+                    <h2 style={{ margin: '0.25rem 0 0 0' }}>{currentFile?.name}</h2>
                   </div>
                 </div>
 
                 <div className="study-toggle">
-                  <button className={`toggle-btn ${studyState.type === 'flashcards' ? 'active' : ''}`} onClick={() => setStudyState({...studyState, type: 'flashcards', currentIndex: 0})}>
+                  <button className={`toggle-btn ${studyState.type === 'flashcards' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'flashcards', currentIndex: 0 })}>
                     Flashcards
                   </button>
-                  <button className={`toggle-btn ${studyState.type === 'qa' ? 'active' : ''}`} onClick={() => setStudyState({...studyState, type: 'qa', currentIndex: 0})}>
-                    Domande Aperte (Audio)
+                  <button className={`toggle-btn ${studyState.type === 'qa' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'qa', currentIndex: 0 })}>
+                    Open Questions (Audio)
                   </button>
                 </div>
 
@@ -985,32 +1126,32 @@ function App() {
                   <div className="flashcard-area">
                     {currentSubjectFlashcards.length === 0 ? (
                       <div className="empty-state">
-                        <BrainCircuit size={48} color="rgba(255,255,255,0.2)" style={{marginBottom: '1rem'}} />
-                        <h3>Nessuna Flashcard</h3>
-                        <p>Non hai ancora creato flashcard per questa materia. Apri un file per crearle.</p>
+                        <BrainCircuit size={48} color="rgba(255,255,255,0.2)" style={{ marginBottom: '1rem' }} />
+                        <h3>No Flashcards</h3>
+                        <p>You haven't created any flashcards for this subject yet. Open a file to create them.</p>
                       </div>
                     ) : (
                       <>
-                        <span style={{marginBottom: '1rem', color: 'var(--text-muted)'}}>Card {studyState.currentIndex + 1} di {currentSubjectFlashcards.length}</span>
-                        <div className={`flashcard ${studyState.isFlipped ? 'flipped' : ''}`} onClick={() => setStudyState({...studyState, isFlipped: !studyState.isFlipped})}>
+                        <span style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Card {studyState.currentIndex + 1} of {currentSubjectFlashcards.length}</span>
+                        <div className={`flashcard ${studyState.isFlipped ? 'flipped' : ''}`} onClick={() => setStudyState({ ...studyState, isFlipped: !studyState.isFlipped })}>
                           <div className="flashcard-inner">
                             <div className="flashcard-front">
-                              <span className="flashcard-label">Domanda</span>
+                              <span className="flashcard-label">Question</span>
                               <p className="flashcard-text">{currentSubjectFlashcards[studyState.currentIndex]?.q}</p>
-                              <span style={{position: 'absolute', bottom: '1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)'}}><RefreshCw size={14} style={{verticalAlign: 'middle', marginRight: '0.5rem'}}/> Clicca per girare</span>
+                              <span style={{ position: 'absolute', bottom: '1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}><RefreshCw size={14} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} /> Click to flip</span>
                             </div>
                             <div className="flashcard-back">
-                              <span className="flashcard-label" style={{color: 'var(--success)'}}>Risposta</span>
-                              <p className="flashcard-text" style={{fontSize: '1.25rem'}}>{currentSubjectFlashcards[studyState.currentIndex]?.a}</p>
+                              <span className="flashcard-label" style={{ color: 'var(--success)' }}>Answer</span>
+                              <p className="flashcard-text" style={{ fontSize: '1.25rem' }}>{currentSubjectFlashcards[studyState.currentIndex]?.a}</p>
                             </div>
                           </div>
                         </div>
-                        
+
                         {studyState.isFlipped && (
-                          <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="flashcard-actions">
-                            <button className="btn-fc hard" onClick={handleNextFlashcard}>Non Sapevo</button>
-                            <button className="btn-fc good" onClick={handleNextFlashcard}>Incerto</button>
-                            <button className="btn-fc easy" onClick={handleNextFlashcard}>Sapevo</button>
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flashcard-actions">
+                            <button className="btn-fc hard" onClick={handleNextFlashcard}>I didn't know</button>
+                            <button className="btn-fc good" onClick={handleNextFlashcard}>Unsure</button>
+                            <button className="btn-fc easy" onClick={handleNextFlashcard}>I knew</button>
                           </motion.div>
                         )}
                       </>
@@ -1022,58 +1163,76 @@ function App() {
                   <div className="qa-area">
                     {currentSubjectQA.length === 0 ? (
                       <div className="empty-state">
-                        <Mic size={48} color="rgba(255,255,255,0.2)" style={{marginBottom: '1rem'}} />
-                        <h3>Nessuna Domanda Aperta</h3>
-                        <p>Non hai ancora creato domande aperte per questa materia. Apri un file per crearle.</p>
+                        <Mic size={48} color="rgba(255,255,255,0.2)" style={{ marginBottom: '1rem' }} />
+                        <h3>No Open Questions</h3>
+                        <p>You haven't created any open questions for this subject yet. Open a file to create them.</p>
                       </div>
                     ) : (
                       <>
-                        <span style={{marginBottom: '1rem', color: 'var(--text-muted)'}}>Domanda {studyState.currentIndex + 1} di {currentSubjectQA.length}</span>
+                        <span style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Question {studyState.currentIndex + 1} of {currentSubjectQA.length}</span>
                         <div className="qa-question-box">
-                          <p className="flashcard-text" style={{margin: 0}}>{currentSubjectQA[studyState.currentIndex]?.q}</p>
+                          <p className="flashcard-text" style={{ margin: 0 }}>{currentSubjectQA[studyState.currentIndex]?.q}</p>
                         </div>
 
                         {!studyState.transcript && !studyState.isProcessing && (
-                          <div style={{textAlign: 'center', marginTop: '2rem'}}>
+                          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
                             <button className={`mic-btn ${studyState.isRecording ? 'recording' : ''}`} onClick={handleMicClick}>
                               {studyState.isRecording ? <Square size={32} /> : <Mic size={32} />}
                             </button>
-                            <p style={{marginTop: '1rem', color: 'var(--text-muted)'}}>{studyState.isRecording ? 'In ascolto... Clicca per terminare' : 'Clicca per registrare la risposta'}</p>
+                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>{studyState.isRecording ? 'Listening... Click to end' : 'Click to record answer'}</p>
                           </div>
                         )}
 
                         {studyState.isProcessing && (
-                          <div style={{textAlign: 'center', marginTop: '4rem', color: 'var(--primary)'}}>
-                            <div className="icon-pulse" style={{width: '60px', height: '60px', margin: '0 auto 1rem'}}><BrainCircuit size={30} /></div>
-                            <p>Analisi Braynr AI in corso...</p>
+                          <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--primary)' }}>
+                            <div className="icon-pulse" style={{ width: '60px', height: '60px', margin: '0 auto 1rem' }}><BrainCircuit size={30} /></div>
+                            <p>Braynr AI analysis in progress...</p>
                           </div>
                         )}
 
                         {studyState.transcript && !studyState.isProcessing && (
-                          <motion.div initial={{opacity: 0}} animate={{opacity: 1}} style={{width: '100%', maxWidth: '700px'}}>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%', maxWidth: '700px' }}>
                             <div className="transcript-box">
-                              <strong style={{display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.875rem'}}>LA TUA RISPOSTA</strong>
+                              <strong style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>YOUR ANSWER</strong>
                               "{studyState.transcript}"
                             </div>
-                            
+
                             {!studyState.feedback ? (
-                              <button className="btn-save" style={{width: '100%', marginTop: '2rem', padding: '1rem'}} onClick={handleEvaluateAudio}>
-                                Valuta Risposta con IA
+                              <button className="btn-save" style={{ width: '100%', marginTop: '2rem', padding: '1rem' }} onClick={handleEvaluateAudio}>
+                                Evaluate Answer with AI
                               </button>
                             ) : (
-                              <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}}>
-                                <div className="ai-feedback-box">
-                                  <div style={{textAlign: 'center', minWidth: '80px'}}>
-                                    <div className="ai-score">{studyState.score}</div>
-                                    <span style={{fontSize: '0.8rem', color: '#10b981', fontWeight: 600}}>PUNTI</span>
+                              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                <div className="ai-feedback-box" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                    <div style={{ textAlign: 'center', minWidth: '80px' }}>
+                                      <div className="ai-score">{studyState.score}</div>
+                                      <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>POINTS</span>
+                                    </div>
+                                    <div style={{ borderLeft: '1px solid rgba(16, 185, 129, 0.3)', paddingLeft: '1.5rem' }}>
+                                      <strong style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#10b981' }}>
+                                        <BrainCircuit size={18} /> AI FEEDBACK
+                                      </strong>
+                                      <p style={{ margin: 0, color: 'var(--text-main)', lineHeight: 1.6 }}>{studyState.feedback.general}</p>
+                                    </div>
                                   </div>
-                                  <div style={{borderLeft: '1px solid rgba(16, 185, 129, 0.3)', paddingLeft: '1.5rem'}}>
-                                    <strong style={{display: 'block', marginBottom: '0.5rem', color: '#10b981'}}>FEEDBACK IA</strong>
-                                    <p style={{margin: 0, color: 'var(--text-main)', lineHeight: 1.6}}>{studyState.feedback}</p>
+
+                                  <div className="feedback-categories" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {studyState.feedback.categories.map((cat, idx) => (
+                                      <div key={idx} className="category-bar">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                                          <span style={{ color: 'var(--text-muted)' }}>{cat.name}</span>
+                                          <span style={{ fontWeight: 600, color: cat.color }}>{cat.score}%</span>
+                                        </div>
+                                        <div className="progress-bar-bg" style={{ height: '6px' }}>
+                                          <div className="progress-bar-fill" style={{ width: `${cat.score}%`, background: cat.color }}></div>
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
-                                <button className="btn-skip" style={{width: '100%', marginTop: '1rem', padding: '1rem', border: '1px solid var(--primary)', color: 'var(--text-main)'}} onClick={handleNextQA}>
-                                  Prossima Domanda
+                                <button className="btn-skip" style={{ width: '100%', marginTop: '1rem', padding: '1rem', border: '1px solid var(--primary)', color: 'var(--text-main)' }} onClick={handleNextQA}>
+                                  Next Question
                                 </button>
                               </motion.div>
                             )}
@@ -1090,30 +1249,23 @@ function App() {
             {currentView === 'calendar' && (
               <motion.div key="calendar" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="calendar-view-container">
                 <div className="calendar-header">
-                  <h2>Maggio 2026</h2>
+                  <h2 style={{ textTransform: 'capitalize' }}>{calendarDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })}</h2>
                   <div className="calendar-nav">
-                    <button className="btn-nav">Oggi</button>
-                    <button className="btn-nav">&lt;</button>
-                    <button className="btn-nav">&gt;</button>
+                    <button className="btn-nav" onClick={() => setCalendarDate(new Date())}>Today</button>
+                    <button className="btn-nav" onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))}>&lt;</button>
+                    <button className="btn-nav" onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))}>&gt;</button>
                   </div>
                 </div>
-                
+
                 <div className="calendar-grid-header">
-                  {["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"].map(d => <div key={d} className="weekday-label">{d}</div>)}
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => <div key={d} className="weekday-label">{d}</div>)}
                 </div>
-                
+
                 <div className="calendar-grid">
-                  {[
-                    null, null, null, null, 1, 2, 3,
-                    4, 5, 6, 7, 8, 9, 10,
-                    11, 12, 13, 14, 15, 16, 17,
-                    18, 19, 20, 21, 22, 23, 24,
-                    25, 26, 27, 28, 29, 30, 31,
-                    null, null, null, null
-                  ].map((day, idx) => {
-                    const dayName = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"][idx % 7];
+                  {getCalendarDays(calendarDate).map((day, idx) => {
+                    const dayName = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][idx % 7];
                     const activeSessions = [];
-                    
+
                     if (day) {
                       Object.entries(goals).forEach(([subject, goalInfo]) => {
                         if (goalInfo.daysOfWeek.includes(dayName)) {
@@ -1121,9 +1273,14 @@ function App() {
                         }
                       });
                     }
-                    
+
+                    const isToday = day &&
+                      calendarDate.getFullYear() === new Date().getFullYear() &&
+                      calendarDate.getMonth() === new Date().getMonth() &&
+                      day === new Date().getDate();
+
                     return (
-                      <div key={idx} className={`calendar-cell ${day ? '' : 'empty'} ${day === 9 ? 'today' : ''}`}>
+                      <div key={idx} className={`calendar-cell ${day ? '' : 'empty'} ${isToday ? 'today' : ''}`}>
                         {day && <span className="day-number">{day}</span>}
                         <div className="sessions-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                           {activeSessions.length > 0 && (
@@ -1132,10 +1289,10 @@ function App() {
                                 const totalHours = activeSessions.reduce((acc, s) => acc + s.hours, 0);
                                 const widthPercent = (session.hours / totalHours) * 100;
                                 return (
-                                  <div 
-                                    key={sIdx} 
-                                    style={{ 
-                                      width: `${widthPercent}%`, 
+                                  <div
+                                    key={sIdx}
+                                    style={{
+                                      width: `${widthPercent}%`,
                                       background: getSubjectColor(session.subject),
                                       opacity: session.progress === 100 ? 0.4 : 1,
                                       transition: 'all 0.3s ease'
@@ -1146,7 +1303,7 @@ function App() {
                               })}
                             </div>
                           )}
-                          
+
                           <div className="sessions-text-list" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                             {activeSessions.map((session, sIdx) => (
                               <div key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '2px' }}>
@@ -1170,10 +1327,10 @@ function App() {
                   <div className="icon-pulse">
                     <FolderPlus size={48} />
                   </div>
-                  <h2 style={{ marginBottom: '1.5rem' }}>Come vuoi chiamare la materia?</h2>
-                  <input type="text" autoFocus placeholder="Es. Analisi Matematica 2, Diritto Privato..." value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} className="input-subject" />
+                  <h2 style={{ marginBottom: '1.5rem' }}>What do you want to call the subject?</h2>
+                  <input type="text" autoFocus placeholder="E.g. Calculus 2, Private Law..." value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} className="input-subject" />
                   <button type="submit" className="btn-upload" disabled={!newSubjectName.trim()} style={{ width: '100%', justifyContent: 'center' }}>
-                    Avanti <ChevronRight size={20} />
+                    Next <ChevronRight size={20} />
                   </button>
                 </form>
               </motion.div>
@@ -1186,51 +1343,54 @@ function App() {
                   <div className="upload-icon-wrapper" style={{ transform: isDragActive ? 'scale(1.1)' : 'scale(1)', transition: '0.2s' }}>
                     <UploadCloud size={40} />
                   </div>
-                  
-                  <h2>{isDragActive ? 'Rilascia i file qui...' : 'Trascina e rilascia i tuoi file'}</h2>
-                  <p>Aggiungi risorse a <strong>{newSubjectName || currentFolder}</strong>. Supportiamo PDF, Word, PPT, immagini, audio e video.</p>
-                  
+
+                  <h2>{isDragActive ? 'Drop files here...' : 'Drag and drop your files'}</h2>
+                  <p>Add resources to <strong>{newSubjectName || currentFolder}</strong>. We support PDF, Word, PPT, images, audio and video.</p>
+
                   <input type="file" id="file-upload" style={{ display: 'none' }} multiple onChange={handleFileInput} disabled={isUploading} />
                   <label htmlFor="file-upload" className="btn-upload" style={{ opacity: isUploading ? 0.7 : 1, pointerEvents: isUploading ? 'none' : 'auto' }}>
-                    {isUploading ? 'Elaborazione in corso...' : 'Seleziona dal computer'}
+                    {isUploading ? 'Processing in progress...' : 'Select from computer'}
                   </label>
                   {isUploading && (
                     <div style={{ marginTop: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
                       <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                      <span>Trascrizione audio in corso con ElevenLabs...</span>
+                      <span>Audio transcription in progress with ElevenLabs...</span>
                     </div>
                   )}
 
                   <AnimatePresence>
                     {uploadFiles.length > 0 && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="files-preview-box">
-                        <h3 className="preview-title"><CheckCircle2 size={18} color="#10b981" /> File pronti per l'analisi</h3>
+                        <h3 className="preview-title"><CheckCircle2 size={18} color="#10b981" /> Files ready for analysis</h3>
                         <div className="preview-list">
                           {uploadFiles.map((file, idx) => (
-                            <div key={idx} className="preview-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                            <div key={idx} className="preview-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <FileIcon size={20} color="#a5b4fc" />
                                 <div>
-                                  <span style={{display: 'block', fontWeight: 500}}>{file.name}</span>
+                                  <span style={{ display: 'block', fontWeight: 500 }}>{file.name}</span>
                                   {file.isTranscribing ? (
-                                    <span style={{fontSize: '0.75rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                                      <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Trascrizione in corso...
+                                    <span style={{ fontSize: '0.75rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Transcription in progress...
                                     </span>
                                   ) : file.error ? (
-                                    <span style={{fontSize: '0.75rem', color: '#ef4444'}}>Errore nella trascrizione</span>
+                                    <span style={{ fontSize: '0.75rem', color: '#ef4444' }}>Error in transcription</span>
                                   ) : (
-                                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{file.pages} pag. • {file.words} parole</span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{file.pages} p. • {file.words} words</span>
                                   )}
                                 </div>
                               </div>
                               <div className="difficulty-selector">
-                                {['semplice', 'medio', 'difficile'].map(level => (
-                                  <button 
-                                    key={level} 
-                                    className={`diff-btn ${file.difficulty === level ? 'active' : ''} ${level}`}
-                                    onClick={() => setFileDifficulty(idx, level)}
+                                {[
+                                  { value: 'notes', label: 'Personal Notes' },
+                                  { value: 'documentation', label: 'Official Documentation' }
+                                ].map(type => (
+                                  <button
+                                    key={type.value}
+                                    className={`diff-btn ${file.difficulty === type.value ? 'active' : ''} ${type.value}`}
+                                    onClick={() => setFileDifficulty(idx, type.value)}
                                   >
-                                    {level.charAt(0).toUpperCase() + level.slice(1)}
+                                    {type.label}
                                   </button>
                                 ))}
                               </div>
@@ -1238,7 +1398,7 @@ function App() {
                           ))}
                         </div>
                         <button className="btn-start-analysis" onClick={handleSaveUploadAndGoToGoals} disabled={isUploading} style={{ opacity: isUploading ? 0.5 : 1 }}>
-                          {isUploading ? 'Attendere...' : 'Salva e Continua'}
+                          {isUploading ? 'Please wait...' : 'Save and Continue'}
                         </button>
                       </motion.div>
                     )}
@@ -1246,19 +1406,18 @@ function App() {
                 </div>
               </motion.div>
             )}
-
-            {/* VIEW: SELECT SUBJECT FOR GOAL */}
+                   {/* VIEW: SELECT SUBJECT FOR GOAL */}
             {currentView === 'select_subject_for_goal' && (
               <motion.div key="select_subject_for_goal" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="center-container">
-                <div className="create-subject-form" style={{padding: '3rem'}}>
-                  <h2>Seleziona la materia</h2>
-                  
+                <div className="create-subject-form" style={{ padding: '3rem' }}>
+                  <h2>Select the subject</h2>
+
                   <div className="subjects-list">
                     {Object.keys(fileSystem).length === 0 && (
-                      <p style={{ color: 'var(--text-muted)' }}>Non hai ancora creato nessuna materia.</p>
+                      <p style={{ color: 'var(--text-muted)' }}>You haven't created any subject yet.</p>
                     )}
                     {Object.keys(fileSystem).length > 0 && Object.keys(fileSystem).filter(subject => !goals[subject]).length === 0 && (
-                      <p style={{ color: 'var(--text-muted)' }}>Tutte le tue materie hanno già un obiettivo impostato.</p>
+                      <p style={{ color: 'var(--text-muted)' }}>All your subjects already have a goal set.</p>
                     )}
                     {Object.keys(fileSystem).filter(subject => !goals[subject]).map(subject => (
                       <button
@@ -1271,13 +1430,13 @@ function App() {
                           setCurrentView('set_goals');
                         }}
                       >
-                         <Folder size={20} color="#8b5cf6" /> {subject}
-                       </button>
+                        <Folder size={20} color="#8b5cf6" /> {subject}
+                      </button>
                     ))}
                   </div>
 
-                  <button className="btn-skip" style={{marginTop: '2rem'}} onClick={navigateToObiettivi}>
-                    Annulla
+                  <button className="btn-skip" style={{ marginTop: '2rem' }} onClick={navigateToObiettivi}>
+                    Cancel
                   </button>
                 </div>
               </motion.div>
@@ -1289,20 +1448,20 @@ function App() {
                 <div className="goals-layout">
                   <div className="goals-form">
                     <div className="form-group">
-                      <label><Calendar size={18}/> Entro quando vuoi completare lo studio?</label>
-                      <input type="date" className="input-date" value={tempGoal.deadline} onChange={(e) => setTempGoal({...tempGoal, deadline: e.target.value})} />
+                      <label><Calendar size={18} /> By when do you want to complete the study?</label>
+                      <input type="date" className="input-date" value={tempGoal.deadline} onChange={(e) => setTempGoal({ ...tempGoal, deadline: e.target.value })} />
                     </div>
-                    
+
                     <div className="form-group">
-                      <label><Clock size={18}/> Ore di studio giornaliere (stimate)</label>
-                      <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                        <input type="range" min="1" max="12" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({...tempGoal, dailyHours: parseInt(e.target.value)})} className="range-slider" />
-                        <span className="hours-display">{tempGoal.dailyHours} ore</span>
+                      <label><Clock size={18} /> Daily study hours (estimated)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <input type="range" min="1" max="12" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({ ...tempGoal, dailyHours: parseInt(e.target.value) })} className="range-slider" />
+                        <span className="hours-display">{tempGoal.dailyHours} hours</span>
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label><CalendarDays size={18}/> In quali giorni vuoi studiare?</label>
+                      <label><CalendarDays size={18} /> On which days do you want to study?</label>
                       <div className="days-picker">
                         {DAYS.map(day => (
                           <button key={day} type="button" onClick={() => toggleDay(day)} className={`day-btn ${tempGoal.daysOfWeek.includes(day) ? 'active' : ''}`}>
@@ -1314,34 +1473,34 @@ function App() {
 
                     <div className="goals-actions">
                       <button className="btn-skip" onClick={handleSkipGoals}>
-                        {previousView === 'obiettivi' ? 'Annulla' : 'Salta (Opzionale)'}
+                        {previousView === 'obiettivi' ? 'Cancel' : 'Skip (Optional)'}
                       </button>
-                      <button className="btn-save" onClick={handleSaveGoals}>Salva Obiettivo</button>
+                      <button className="btn-save" onClick={handleSaveGoals}>Save Goal</button>
                     </div>
                   </div>
 
                   <div className="suggestion-box">
                     <div className="suggestion-header">
                       <Sparkles size={20} color="#a78bfa" />
-                      <span>Stima Braynr AI</span>
+                      <span>Braynr AI Estimate</span>
                     </div>
                     <div className="suggestion-body">
                       {Object.values(goals).filter(g => g.progress === 100).length >= 3 ? (
                         <>
-                          <p>In base ai materiali analizzati ({fileSystem[currentFolder]?.length || 0} file) e ai tuoi <strong>{Object.values(goals).filter(g => g.progress === 100).length} progetti precedenti</strong>, calcoliamo che siano necessarie circa <strong>14 ore</strong> di studio attivo per un apprendimento profondo.</p>
+                          <p>Based on the analyzed materials ({fileSystem[currentFolder]?.length || 0} files) and your <strong>{Object.values(goals).filter(g => g.progress === 100).length} previous projects</strong>, we calculate that approximately <strong>14 hours</strong> of active study are necessary for deep learning.</p>
                           {tempGoal.daysOfWeek.length > 0 ? (
-                            <p style={{marginTop: '1rem', color: 'var(--text-muted)'}}>
-                              Studiando <strong>{tempGoal.dailyHours} ore</strong> per <strong>{tempGoal.daysOfWeek.length} giorni</strong> a settimana, completerai la materia in circa <strong>{Math.ceil(14 / (tempGoal.dailyHours * tempGoal.daysOfWeek.length))} settimane</strong>.
+                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
+                              Studying <strong>{tempGoal.dailyHours} hours</strong> for <strong>{tempGoal.daysOfWeek.length} days</strong> per week, you will complete the subject in about <strong>{Math.ceil(14 / (tempGoal.dailyHours * tempGoal.daysOfWeek.length))} weeks</strong>.
                             </p>
                           ) : (
-                            <p style={{marginTop: '1rem', color: 'var(--text-muted)'}}>Seleziona i giorni di studio per avere una stima di completamento più precisa.</p>
+                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Select study days to get a more accurate completion estimate.</p>
                           )}
                         </>
                       ) : (
-                        <p style={{color: 'var(--text-muted)'}}>
-                          L'algoritmo di stima IA si attiverà dopo che avrai completato almeno <strong>3 progetti</strong>. Questo ci permette di offrirti una stima personalizzata e coerente con i tuoi ritmi.
-                          <br/><br/>
-                          Attualmente hai completato <strong>{Object.values(goals).filter(g => g.progress === 100).length}</strong> progetti.
+                        <p style={{ color: 'var(--text-muted)' }}>
+                          The AI estimation algorithm will activate after you have completed at least <strong>3 projects</strong>. This allows us to offer you a personalized and consistent estimate with your pace.
+                          <br /><br />
+                          You have currently completed <strong>{Object.values(goals).filter(g => g.progress === 100).length}</strong> projects.
                         </p>
                       )}
                     </div>
@@ -1355,10 +1514,10 @@ function App() {
               <motion.div key="obiettivi" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
                 <div className="grid-container">
                   {Object.keys(goals).length === 0 && (
-                    <div className="empty-state" style={{gridColumn: '1 / -1'}}>
-                      <Target size={48} color="rgba(255,255,255,0.2)" style={{marginBottom: '1rem'}} />
-                      <h3>Nessun obiettivo impostato</h3>
-                      <p>Crea un nuovo obiettivo o impostane uno dopo aver caricato le fonti.</p>
+                    <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                      <Target size={48} color="rgba(255,255,255,0.2)" style={{ marginBottom: '1rem' }} />
+                      <h3>No goal set</h3>
+                      <p>Create a new goal or set one after uploading sources.</p>
                     </div>
                   )}
 
@@ -1367,36 +1526,36 @@ function App() {
                       <div className="goal-header">
                         <Target size={24} color="var(--primary)" />
                         <h3>{subject}</h3>
-                        {goalInfo.progress === 100 && <span className="badge-completed" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto' }}>Completato</span>}
+                        {goalInfo.progress === 100 && <span className="badge-completed" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto' }}>Completed</span>}
                       </div>
                       <div className="goal-detail">
                         <Calendar size={16} />
-                        <span>Deadline: {goalInfo.deadline ? new Date(goalInfo.deadline).toLocaleDateString('it-IT') : 'Non impostata'}</span>
+                        <span>Deadline: {goalInfo.deadline ? new Date(goalInfo.deadline).toLocaleDateString('en-US') : 'Not set'}</span>
                       </div>
                       <div className="goal-detail">
                         <Clock size={16} />
-                        <span>{goalInfo.dailyHours} ore al giorno</span>
+                        <span>{goalInfo.dailyHours} hours per day</span>
                       </div>
                       <div className="goal-detail">
                         <CalendarDays size={16} />
-                        <span>{goalInfo.daysOfWeek.length > 0 ? goalInfo.daysOfWeek.join(', ') : 'Nessun giorno'}</span>
+                        <span>{goalInfo.daysOfWeek.length > 0 ? goalInfo.daysOfWeek.join(', ') : 'No days'}</span>
                       </div>
                       <div className="progress-bar-bg">
                         <div className="progress-bar-fill" style={{ width: `${goalInfo.progress || 0}%`, background: goalInfo.progress === 100 ? 'var(--success)' : 'var(--primary)' }}></div>
                       </div>
-                      <span style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>{goalInfo.progress || 0}% completato</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>{goalInfo.progress || 0}% completed</span>
                     </div>
                   ))}
 
-                  <motion.div 
-                    className="folder-card add-card" 
-                    whileHover={{ y: -5, scale: 1.02 }} 
+                  <motion.div
+                    className="folder-card add-card"
+                    whileHover={{ y: -5, scale: 1.02 }}
                     onClick={() => setCurrentView('select_subject_for_goal')}
                   >
                     <div className="add-icon-bg">
                       <Plus size={36} />
                     </div>
-                    <h3>Nuovo Obiettivo</h3>
+                    <h3>New Goal</h3>
                   </motion.div>
 
                 </div>
@@ -1407,24 +1566,24 @@ function App() {
                       <div className="modal-header">
                         <Target size={32} color="var(--primary)" />
                         <h3>{viewingGoal}</h3>
-                        {goals[viewingGoal].progress === 100 && <span className="badge-completed" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto' }}>Completato</span>}
+                        {goals[viewingGoal].progress === 100 && <span className="badge-completed" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto' }}>Completed</span>}
                       </div>
                       <div className="modal-body">
                         <div className="goal-detail" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <Calendar size={18} />
-                          <span><strong>Deadline:</strong> {goals[viewingGoal].deadline ? new Date(goals[viewingGoal].deadline).toLocaleDateString('it-IT') : 'Non impostata'}</span>
+                          <span><strong>Deadline:</strong> {goals[viewingGoal].deadline ? new Date(goals[viewingGoal].deadline).toLocaleDateString('en-US') : 'Not set'}</span>
                         </div>
                         <div className="goal-detail" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <Clock size={18} />
-                          <span><strong>Ritmo:</strong> {goals[viewingGoal].dailyHours} ore al giorno</span>
+                          <span><strong>Pace:</strong> {goals[viewingGoal].dailyHours} hours per day</span>
                         </div>
                         <div className="goal-detail" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <CalendarDays size={18} />
-                          <span><strong>Giorni:</strong> {goals[viewingGoal].daysOfWeek.length > 0 ? goals[viewingGoal].daysOfWeek.join(', ') : 'Nessun giorno'}</span>
+                          <span><strong>Days:</strong> {goals[viewingGoal].daysOfWeek.length > 0 ? goals[viewingGoal].daysOfWeek.join(', ') : 'No days'}</span>
                         </div>
                         <div style={{ marginTop: '1.5rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span>Progresso</span>
+                            <span>Progress</span>
                             <span>{goals[viewingGoal].progress || 0}%</span>
                           </div>
                           <div className="progress-bar-bg">
@@ -1433,14 +1592,14 @@ function App() {
                         </div>
                       </div>
                       <div className="modal-footer" style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                        <button onClick={() => setViewingGoal(null)} className="btn-skip" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}>Chiudi</button>
+                        <button onClick={() => setViewingGoal(null)} className="btn-skip" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}>Close</button>
                         <button onClick={() => {
                           setCurrentFolder(viewingGoal);
                           setTempGoal(goals[viewingGoal]);
                           setPreviousView('obiettivi');
                           setCurrentView('set_goals');
                           setViewingGoal(null);
-                        }} className="btn-save" style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none' }}>Modifica</button>
+                        }} className="btn-save" style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none' }}>Edit</button>
                       </div>
                     </motion.div>
                   </div>
@@ -1452,24 +1611,24 @@ function App() {
             {currentView === 'statistiche' && (
               <motion.div key="statistiche" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
                 <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                  
+
                   {/* CARD 1: STREAK */}
                   <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div className="stat-header"><Flame color="#f97316" /> <h3>Streak Giornaliero</h3></div>
+                    <div className="stat-header"><Flame color="#f97316" /> <h3>Daily Streak</h3></div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '1rem 0' }}>
                       <span style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)' }}>{stats.flashcards.streakDays}</span>
-                      <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>giorni</span>
+                      <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>days</span>
                     </div>
-                    <p style={{ color: 'var(--text-muted)' }}>Studi consecutivi completati. Continua così!</p>
+                    <p style={{ color: 'var(--text-muted)' }}>Consecutive studies completed. Keep it up!</p>
                   </div>
 
                   {/* CARD 2: RETENTION CIRCLE */}
                   <div className="stat-card">
-                    <div className="stat-header"><BrainCircuit color="#3b82f6" /> <h3>Ritenzione Flashcard</h3></div>
+                    <div className="stat-header"><BrainCircuit color="#3b82f6" /> <h3>Flashcard Retention</h3></div>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px', margin: '1rem 0' }}>
                       <svg width="120" height="120" viewBox="0 0 120 120">
                         <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                        <circle cx="60" cy="60" r="50" fill="none" stroke="#3b82f6" strokeWidth="8" 
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="#3b82f6" strokeWidth="8"
                           strokeDasharray={`${2 * Math.PI * 50}`}
                           strokeDashoffset={`${2 * Math.PI * 50 * (1 - stats.flashcards.retentionRate / 100)}`}
                           strokeLinecap="round"
@@ -1479,16 +1638,16 @@ function App() {
                         <text x="60" y="68" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">{stats.flashcards.retentionRate}%</text>
                       </svg>
                     </div>
-                    <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Su {stats.flashcards.reviewCount} revisioni totali.</p>
+                    <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Out of {stats.flashcards.reviewCount} total reviews.</p>
                   </div>
 
                   {/* CARD 3: QA SCORE CIRCLE */}
                   <div className="stat-card">
-                    <div className="stat-header"><HelpCircle color="#10b981" /> <h3>Valutazione Q&A</h3></div>
+                    <div className="stat-header"><HelpCircle color="#10b981" /> <h3>Q&A Evaluation</h3></div>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px', margin: '1rem 0' }}>
                       <svg width="120" height="120" viewBox="0 0 120 120">
                         <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                        <circle cx="60" cy="60" r="50" fill="none" stroke="#10b981" strokeWidth="8" 
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="#10b981" strokeWidth="8"
                           strokeDasharray={`${2 * Math.PI * 50}`}
                           strokeDashoffset={`${2 * Math.PI * 50 * (1 - stats.qa.averageScore / 100)}`}
                           strokeLinecap="round"
@@ -1498,18 +1657,18 @@ function App() {
                         <text x="60" y="68" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">{stats.qa.averageScore}</text>
                       </svg>
                     </div>
-                    <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Media su {stats.qa.questionsAnswered} risposte date.</p>
+                    <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Average out of {stats.qa.questionsAnswered} answers given.</p>
                   </div>
 
                 </div>
 
                 {/* CARD 4: BAR CHART (WIDE) */}
                 <div className="stat-card wide" style={{ marginBottom: '1.5rem' }}>
-                  <div className="stat-header"><Clock color="#f59e0b" /> <h3>Distribuzione Ore di Studio Settimanali</h3></div>
-                  <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Ore totali pianificate per ogni materia in base ai tuoi obiettivi.</p>
+                  <div className="stat-header"><Clock color="#f59e0b" /> <h3>Weekly Study Hours Distribution</h3></div>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Total hours planned for each subject based on your goals.</p>
                   <div className="bar-chart" style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5rem', height: '200px', marginTop: '2.5rem', paddingBottom: '1.5rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
                     {Object.keys(goals).length === 0 ? (
-                      <p style={{ color: 'var(--text-muted)', width: '100%', textAlign: 'center', alignSelf: 'center' }}>Nessun obiettivo impostato per calcolare le ore.</p>
+                      <p style={{ color: 'var(--text-muted)', width: '100%', textAlign: 'center', alignSelf: 'center' }}>No goal set to calculate hours.</p>
                     ) : (
                       Object.entries(goals).map(([subject, goalInfo]) => {
                         const hours = goalInfo.dailyHours * goalInfo.daysOfWeek.length;
@@ -1532,13 +1691,13 @@ function App() {
 
                 {/* CARD 5: ADHERENCE (WIDE) */}
                 <div className="stat-card wide">
-                  <div className="stat-header"><Activity color="#8b5cf6" /> <h3>Coerenza al Piano di Studio</h3></div>
+                  <div className="stat-header"><Activity color="#8b5cf6" /> <h3>Consistency with Study Plan</h3></div>
                   <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
-                    Le tue ultime due settimane. Hai un tasso di aderenza del <strong style={{ color: 'white' }}>{Math.round((stats.adherence.completedDays / Math.max(1, (stats.adherence.completedDays + stats.adherence.missedDays))) * 100)}%</strong>.
+                    Your last two weeks. You have an adherence rate of <strong style={{ color: 'white' }}>{Math.round((stats.adherence.completedDays / Math.max(1, (stats.adherence.completedDays + stats.adherence.missedDays))) * 100)}%</strong>.
                   </p>
                   <div className="adherence-graph" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px' }}>
                     {stats.adherence.history.map((studied, i) => (
-                      <div key={i} className={`adherence-day ${studied ? 'studied' : 'missed'}`} title={studied ? "Studiato" : "Saltato"} style={{ flex: 1, height: '30px', borderRadius: '6px', cursor: 'pointer' }}></div>
+                      <div key={i} className={`adherence-day ${studied ? 'studied' : 'missed'}`} title={studied ? "Studied" : "Skipped"} style={{ flex: 1, height: '30px', borderRadius: '6px', cursor: 'pointer' }}></div>
                     ))}
                   </div>
                 </div>
