@@ -28,7 +28,8 @@ import {
   XCircle,
   Flame,
   BrainCircuit,
-  HelpCircle
+  HelpCircle,
+  Trash2
 } from 'lucide-react';
 import './App.css';
 
@@ -157,6 +158,21 @@ function App() {
       : checkedSubjects['general'];
     
     handleCheckIn(atLeastOneStudied);
+  };
+  const handleDeleteFolder = (e, folderName) => {
+    e.stopPropagation();
+    if (window.confirm(`Sei sicuro di voler eliminare la materia "${folderName}"? Tutti i file e gli obiettivi associati verranno rimossi.`)) {
+      setFileSystem(prev => {
+        const updated = { ...prev };
+        delete updated[folderName];
+        return updated;
+      });
+      setGoals(prev => {
+        const updated = { ...prev };
+        delete updated[folderName];
+        return updated;
+      });
+    }
   };
 
   const handleCheckIn = (studied) => {
@@ -515,7 +531,10 @@ function App() {
             {currentView === 'home' && (
               <motion.div key="home" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="grid-container">
                 {Object.keys(fileSystem).map((folderName, idx) => (
-                  <motion.div key={idx} className="folder-card" whileHover={{ y: -5, scale: 1.02 }} onClick={() => { setCurrentFolder(folderName); setCurrentView('folder'); }}>
+                  <motion.div key={idx} className="folder-card" whileHover={{ y: -5, scale: 1.02 }} onClick={() => { setCurrentFolder(folderName); setCurrentView('folder'); }} style={{ position: 'relative' }}>
+                    <button className="btn-delete-folder" onClick={(e) => handleDeleteFolder(e, folderName)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', opacity: 0.5, transition: '0.2s' }}>
+                      <Trash2 size={18} />
+                    </button>
                     <div className="folder-icon-bg">
                       <Folder size={32} />
                     </div>
@@ -660,7 +679,7 @@ function App() {
                   <div className="icon-pulse">
                     <FolderPlus size={48} />
                   </div>
-                  <h2>Come vuoi chiamare la materia?</h2>
+                  <h2 style={{ marginBottom: '1.5rem' }}>Come vuoi chiamare la materia?</h2>
                   <input type="text" autoFocus placeholder="Es. Analisi Matematica 2, Diritto Privato..." value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} className="input-subject" />
                   <button type="submit" className="btn-upload" disabled={!newSubjectName.trim()} style={{ width: '100%', justifyContent: 'center' }}>
                     Avanti <ChevronRight size={20} />

@@ -87,3 +87,11 @@
 - [2026-05-09/19:58]: Modal di Dettaglio Obiettivi
   - *Details*: Modificato il flusso di modifica degli obiettivi. Ora, cliccando su una card, si apre un modal di dettaglio con le informazioni correnti. Da qui l'utente può decidere se chiudere o procedere alla modifica tramite il pulsante "Modifica". Il modal si chiude anche cliccando all'esterno.
   - *Tech Notes*: Modificato `App.jsx`. Aggiunto lo stato `viewingGoal` e la struttura del modal con blocco della propagazione del click.
+
+- [2026-05-09/20:00]: Eliminazione Materie dalla Home
+  - *Details*: Aggiunta la possibilità di eliminare una materia (cartella) direttamente dalla Home. È stata inserita un'icona a forma di cestino in alto a destra su ogni card. L'azione richiede una conferma tramite finestra di dialogo e rimuove sia la cartella con i file sia gli obiettivi associati.
+  - *Tech Notes*: Modificati `App.jsx` e `App.css`. Importata l'icona `Trash2`. Aggiunta la funzione `handleDeleteFolder` con `e.stopPropagation()` per non aprire la cartella.
+
+- [2026-05-09/20:01]: Spaziatura Titolo Creazione Materia
+  - *Details*: Aggiunto un margine inferiore al titolo "Come vuoi chiamare la materia?" nella vista di creazione per distanziarlo dal campo di testo e migliorare la leggibilità.
+  - *Tech Notes*: Modificato `App.jsx` aggiungendo `style={{ marginBottom: '1.5rem' }}` all'elemento `<h2>`.
