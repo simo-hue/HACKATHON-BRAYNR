@@ -18,15 +18,20 @@ import {
   Plus,
   ArrowLeft,
   ChevronRight,
-  FolderPlus
+  FolderPlus,
+  Calendar,
+  Clock,
+  Sparkles,
+  CalendarDays
 } from 'lucide-react';
 import './App.css';
 
 function App() {
   // Navigation & Hierarchy State
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal'
   const [currentFolder, setCurrentFolder] = useState(null);
   const [newSubjectName, setNewSubjectName] = useState('');
+  const [previousView, setPreviousView] = useState(null);
   
   // Mock File System State
   const [fileSystem, setFileSystem] = useState({
@@ -39,6 +44,42 @@ function App() {
     ]
   });
 
+  // Goals State
+  const [goals, setGoals] = useState({
+    "Intelligenza Artificiale": {
+      deadline: "2026-06-15",
+      dailyHours: 2,
+      daysOfWeek: ["Lun", "Mer", "Ven"],
+      progress: 35
+    },
+    "Storia Contemporanea": {
+      deadline: "2026-04-10",
+      dailyHours: 1,
+      daysOfWeek: ["Mar", "Gio"],
+      progress: 100
+    },
+    "Basi di Dati": {
+      deadline: "2026-04-20",
+      dailyHours: 3,
+      daysOfWeek: ["Lun", "Mer", "Ven"],
+      progress: 100
+    },
+    "Diritto Privato": {
+      deadline: "2026-05-01",
+      dailyHours: 2,
+      daysOfWeek: ["Sab", "Dom"],
+      progress: 100
+    }
+  });
+
+  const [tempGoal, setTempGoal] = useState({
+    deadline: "",
+    dailyHours: 2,
+    daysOfWeek: []
+  });
+
+  const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
   // Upload State
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]);
@@ -49,6 +90,13 @@ function App() {
     setCurrentFolder(null);
     setUploadFiles([]);
     setNewSubjectName('');
+    setPreviousView(null);
+  };
+
+  const navigateToObiettivi = () => {
+    setCurrentView('obiettivi');
+    setCurrentFolder(null);
+    setPreviousView(null);
   };
 
   // Create Subject Flow
@@ -65,7 +113,7 @@ function App() {
     }
   };
 
-  const handleSaveUpload = () => {
+  const handleSaveUploadAndGoToGoals = () => {
     const targetFolder = currentView === 'upload_files' ? newSubjectName : currentFolder;
     
     setFileSystem(prev => {
@@ -81,7 +129,46 @@ function App() {
 
     setUploadFiles([]);
     setCurrentFolder(targetFolder);
-    setCurrentView('folder');
+    setTempGoal({ deadline: "", dailyHours: 2, daysOfWeek: [] });
+    setPreviousView(null);
+    setCurrentView('set_goals');
+  };
+
+  const handleSaveGoals = () => {
+    if (currentFolder) {
+      setGoals(prev => ({
+        ...prev,
+        [currentFolder]: { ...tempGoal }
+      }));
+    }
+    
+    if (previousView === 'obiettivi') {
+      setCurrentView('obiettivi');
+    } else {
+      setCurrentView('folder');
+    }
+    setPreviousView(null);
+  };
+
+  const handleSkipGoals = () => {
+    if (previousView === 'obiettivi') {
+      setCurrentView('obiettivi');
+    } else {
+      setCurrentView('folder');
+    }
+    setPreviousView(null);
+  };
+
+  const toggleDay = (day) => {
+    setTempGoal(prev => {
+      const isSelected = prev.daysOfWeek.includes(day);
+      return {
+        ...prev,
+        daysOfWeek: isSelected 
+          ? prev.daysOfWeek.filter(d => d !== day)
+          : [...prev.daysOfWeek, day]
+      };
+    });
   };
 
   // Drag & Drop Handlers
@@ -130,7 +217,7 @@ function App() {
             <UploadCloud size={20} />
             <span>Inserisci Fonti</span>
           </a>
-          <a className="nav-item">
+          <a onClick={navigateToObiettivi} className={`nav-item ${['obiettivi', 'select_subject_for_goal', 'set_goals'].includes(currentView) && previousView !== null ? 'active' : currentView === 'obiettivi' ? 'active' : ''}`}>
             <Target size={20} />
             <span>Obiettivi</span>
           </a>
@@ -190,6 +277,45 @@ function App() {
                 <p>Carica PDF, slide, appunti, audio o video per iniziare a studiare.</p>
               </>
             )}
+            {currentView === 'set_goals' && (
+              <>
+                {previousView === 'obiettivi' ? (
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
+                    <span>Obiettivi</span>
+                    <ChevronRight size={16} />
+                    <span style={{color: 'var(--text-main)'}}>{currentFolder}</span>
+                  </div>
+                ) : (
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
+                    <span>Creazione materia</span>
+                    <ChevronRight size={16} />
+                    <span>Upload Fonti</span>
+                    <ChevronRight size={16} />
+                    <span style={{color: 'var(--text-main)'}}>Obiettivi</span>
+                  </div>
+                )}
+                
+                <h1>{previousView === 'obiettivi' ? 'Modifica o Imposta Obiettivi' : 'Imposta Obiettivi di Studio'}</h1>
+                <p>Pianifica lo studio per <strong>{currentFolder}</strong>.</p>
+              </>
+            )}
+            {currentView === 'select_subject_for_goal' && (
+              <>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
+                  <span style={{cursor: 'pointer'}} onClick={navigateToObiettivi}>Obiettivi</span>
+                  <ChevronRight size={16} />
+                  <span style={{color: 'var(--text-main)'}}>Seleziona Materia</span>
+                </div>
+                <h1>Aggiungi un nuovo Obiettivo</h1>
+                <p>Per quale materia vuoi configurare il piano di studio?</p>
+              </>
+            )}
+            {currentView === 'obiettivi' && (
+              <>
+                <h1>I tuoi Obiettivi</h1>
+                <p>Gestisci le tue scadenze e ritmi di studio per ogni materia.</p>
+              </>
+            )}
           </div>
 
           <div className="profile-section">
@@ -210,21 +336,9 @@ function App() {
             
             {/* VIEW: HOME (Folders) */}
             {currentView === 'home' && (
-              <motion.div 
-                key="home"
-                initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}
-                className="grid-container"
-              >
+              <motion.div key="home" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="grid-container">
                 {Object.keys(fileSystem).map((folderName, idx) => (
-                  <motion.div 
-                    key={idx} 
-                    className="folder-card"
-                    whileHover={{ y: -5, scale: 1.02 }}
-                    onClick={() => {
-                      setCurrentFolder(folderName);
-                      setCurrentView('folder');
-                    }}
-                  >
+                  <motion.div key={idx} className="folder-card" whileHover={{ y: -5, scale: 1.02 }} onClick={() => { setCurrentFolder(folderName); setCurrentView('folder'); }}>
                     <div className="folder-icon-bg">
                       <Folder size={32} />
                     </div>
@@ -233,12 +347,7 @@ function App() {
                   </motion.div>
                 ))}
                 
-                {/* The Add Button as the last card */}
-                <motion.div 
-                  className="folder-card add-card"
-                  whileHover={{ y: -5, scale: 1.02 }}
-                  onClick={handleStartCreate}
-                >
+                <motion.div className="folder-card add-card" whileHover={{ y: -5, scale: 1.02 }} onClick={handleStartCreate}>
                   <div className="add-icon-bg">
                     <Plus size={36} />
                   </div>
@@ -249,17 +358,10 @@ function App() {
 
             {/* VIEW: FOLDER (Files inside) */}
             {currentView === 'folder' && (
-              <motion.div 
-                key="folder"
-                initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}
-              >
+              <motion.div key="folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
                 <div className="files-list">
                   {fileSystem[currentFolder]?.map((file, idx) => (
-                    <motion.div 
-                      key={idx} 
-                      className="file-card"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                    >
+                    <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
                       <div className="file-icon-bg">
                         <FileText size={24} />
                       </div>
@@ -280,10 +382,7 @@ function App() {
                   <motion.div 
                     className="file-card add-file-card"
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (fileSystem[currentFolder]?.length || 0) * 0.05 }}
-                    onClick={() => {
-                      setUploadFiles([]);
-                      setCurrentView('upload_files'); // Upload directly to current folder
-                    }}
+                    onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
                   >
                     <Plus size={24} /> Aggiungi altre risorse
                   </motion.div>
@@ -293,24 +392,13 @@ function App() {
 
             {/* VIEW: CREATE SUBJECT NAME */}
             {currentView === 'create_name' && (
-              <motion.div 
-                key="create_name"
-                initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}
-                className="center-container"
-              >
+              <motion.div key="create_name" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="center-container">
                 <form onSubmit={handleNameSubmit} className="create-subject-form">
                   <div className="icon-pulse">
                     <FolderPlus size={48} />
                   </div>
                   <h2>Come vuoi chiamare la materia?</h2>
-                  <input 
-                    type="text" 
-                    autoFocus
-                    placeholder="Es. Analisi Matematica 2, Diritto Privato..."
-                    value={newSubjectName}
-                    onChange={(e) => setNewSubjectName(e.target.value)}
-                    className="input-subject"
-                  />
+                  <input type="text" autoFocus placeholder="Es. Analisi Matematica 2, Diritto Privato..." value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} className="input-subject" />
                   <button type="submit" className="btn-upload" disabled={!newSubjectName.trim()} style={{width: '100%', justifyContent: 'center'}}>
                     Avanti <ChevronRight size={20} />
                   </button>
@@ -320,19 +408,8 @@ function App() {
 
             {/* VIEW: UPLOAD FILES */}
             {currentView === 'upload_files' && (
-              <motion.div 
-                key="upload_files"
-                initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}
-                className="upload-container"
-              >
-                <div 
-                  className={`upload-zone ${isDragActive ? 'drag-active' : ''}`}
-                  onDragEnter={onDragEnter}
-                  onDragLeave={onDragLeave}
-                  onDragOver={onDragOver}
-                  onDrop={onDrop}
-                >
-                  {/* Decorative Elements */}
+              <motion.div key="upload_files" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="upload-container">
+                <div className={`upload-zone ${isDragActive ? 'drag-active' : ''}`} onDragEnter={onDragEnter} onDragLeave={onDragLeave} onDragOver={onDragOver} onDrop={onDrop}>
                   <div className="floating-element" style={{ top: '10%', left: '15%', color: 'rgba(139, 92, 246, 0.4)' }}><FileText size={32} /></div>
                   <div className="floating-element" style={{ top: '20%', right: '15%', color: 'rgba(59, 130, 246, 0.4)' }}><Video size={40} /></div>
                   <div className="floating-element" style={{ bottom: '15%', left: '20%', color: 'rgba(16, 185, 129, 0.4)' }}><Volume2 size={28} /></div>
@@ -347,13 +424,9 @@ function App() {
                   <input type="file" id="file-upload" style={{ display: 'none' }} multiple onChange={handleFileInput} />
                   <label htmlFor="file-upload" className="btn-upload">Seleziona dal computer</label>
 
-                  {/* Preview of selected files */}
                   <AnimatePresence>
                     {uploadFiles.length > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                        className="files-preview-box"
-                      >
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="files-preview-box">
                         <h3 className="preview-title"><CheckCircle2 size={18} color="#10b981" /> File pronti per l'analisi</h3>
                         <div className="preview-list">
                           {uploadFiles.map((file, idx) => (
@@ -363,8 +436,8 @@ function App() {
                             </div>
                           ))}
                         </div>
-                        <button className="btn-start-analysis" onClick={handleSaveUpload}>
-                          Salva e Inizia Analisi AI
+                        <button className="btn-start-analysis" onClick={handleSaveUploadAndGoToGoals}>
+                          Salva e Continua
                         </button>
                       </motion.div>
                     )}
@@ -372,7 +445,160 @@ function App() {
                 </div>
               </motion.div>
             )}
-            
+
+            {/* VIEW: SELECT SUBJECT FOR GOAL */}
+            {currentView === 'select_subject_for_goal' && (
+              <motion.div key="select_subject_for_goal" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="center-container">
+                <div className="create-subject-form" style={{padding: '3rem'}}>
+                  <h2>Seleziona la materia</h2>
+                  
+                  <div className="subjects-list">
+                    {Object.keys(fileSystem).length === 0 && (
+                       <p style={{color: 'var(--text-muted)'}}>Non hai ancora creato nessuna materia.</p>
+                    )}
+                    {Object.keys(fileSystem).map(subject => (
+                       <button 
+                         key={subject} 
+                         className="btn-subject-select"
+                         onClick={() => {
+                           setCurrentFolder(subject);
+                           setTempGoal(goals[subject] || { deadline: "", dailyHours: 2, daysOfWeek: [] });
+                           setPreviousView('obiettivi');
+                           setCurrentView('set_goals');
+                         }}
+                       >
+                         <Folder size={20} color="#8b5cf6" /> {subject}
+                       </button>
+                    ))}
+                  </div>
+
+                  <button className="btn-skip" style={{marginTop: '2rem'}} onClick={navigateToObiettivi}>
+                    Annulla
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* VIEW: SET GOALS */}
+            {currentView === 'set_goals' && (
+              <motion.div key="set_goals" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="goals-view-container">
+                <div className="goals-layout">
+                  <div className="goals-form">
+                    <div className="form-group">
+                      <label><Calendar size={18}/> Entro quando vuoi completare lo studio?</label>
+                      <input type="date" className="input-date" value={tempGoal.deadline} onChange={(e) => setTempGoal({...tempGoal, deadline: e.target.value})} />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label><Clock size={18}/> Ore di studio giornaliere (stimate)</label>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                        <input type="range" min="1" max="12" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({...tempGoal, dailyHours: parseInt(e.target.value)})} className="range-slider" />
+                        <span className="hours-display">{tempGoal.dailyHours} ore</span>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label><CalendarDays size={18}/> In quali giorni vuoi studiare?</label>
+                      <div className="days-picker">
+                        {DAYS.map(day => (
+                          <button key={day} type="button" onClick={() => toggleDay(day)} className={`day-btn ${tempGoal.daysOfWeek.includes(day) ? 'active' : ''}`}>
+                            {day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="goals-actions">
+                      <button className="btn-skip" onClick={handleSkipGoals}>
+                        {previousView === 'obiettivi' ? 'Annulla' : 'Salta (Opzionale)'}
+                      </button>
+                      <button className="btn-save" onClick={handleSaveGoals}>Salva Obiettivo</button>
+                    </div>
+                  </div>
+
+                  <div className="suggestion-box">
+                    <div className="suggestion-header">
+                      <Sparkles size={20} color="#a78bfa" />
+                      <span>Stima Braynr AI</span>
+                    </div>
+                    <div className="suggestion-body">
+                      {Object.values(goals).filter(g => g.progress === 100).length >= 3 ? (
+                        <>
+                          <p>In base ai materiali analizzati ({fileSystem[currentFolder]?.length || 0} file) e ai tuoi <strong>{Object.values(goals).filter(g => g.progress === 100).length} progetti precedenti</strong>, calcoliamo che siano necessarie circa <strong>14 ore</strong> di studio attivo per un apprendimento profondo.</p>
+                          {tempGoal.daysOfWeek.length > 0 ? (
+                            <p style={{marginTop: '1rem', color: 'var(--text-muted)'}}>
+                              Studiando <strong>{tempGoal.dailyHours} ore</strong> per <strong>{tempGoal.daysOfWeek.length} giorni</strong> a settimana, completerai la materia in circa <strong>{Math.ceil(14 / (tempGoal.dailyHours * tempGoal.daysOfWeek.length))} settimane</strong>.
+                            </p>
+                          ) : (
+                            <p style={{marginTop: '1rem', color: 'var(--text-muted)'}}>Seleziona i giorni di studio per avere una stima di completamento più precisa.</p>
+                          )}
+                        </>
+                      ) : (
+                        <p style={{color: 'var(--text-muted)'}}>
+                          L'algoritmo di stima IA si attiverà dopo che avrai completato almeno <strong>3 progetti</strong>. Questo ci permette di offrirti una stima personalizzata e coerente con i tuoi ritmi.
+                          <br/><br/>
+                          Attualmente hai completato <strong>{Object.values(goals).filter(g => g.progress === 100).length}</strong> progetti.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* VIEW: OBIETTIVI */}
+            {currentView === 'obiettivi' && (
+              <motion.div key="obiettivi" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
+                <div className="grid-container">
+                  {Object.keys(goals).length === 0 && (
+                    <div className="empty-state" style={{gridColumn: '1 / -1'}}>
+                      <Target size={48} color="rgba(255,255,255,0.2)" style={{marginBottom: '1rem'}} />
+                      <h3>Nessun obiettivo impostato</h3>
+                      <p>Crea un nuovo obiettivo o impostane uno dopo aver caricato le fonti.</p>
+                    </div>
+                  )}
+
+                  {Object.entries(goals).map(([subject, goalInfo]) => (
+                    <div key={subject} className="goal-card">
+                      <div className="goal-header">
+                        <Target size={24} color="var(--primary)" />
+                        <h3>{subject}</h3>
+                        {goalInfo.progress === 100 && <span className="badge-completed" style={{background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto'}}>Completato</span>}
+                      </div>
+                      <div className="goal-detail">
+                        <Calendar size={16} />
+                        <span>Deadline: {goalInfo.deadline ? new Date(goalInfo.deadline).toLocaleDateString('it-IT') : 'Non impostata'}</span>
+                      </div>
+                      <div className="goal-detail">
+                        <Clock size={16} />
+                        <span>{goalInfo.dailyHours} ore al giorno</span>
+                      </div>
+                      <div className="goal-detail">
+                        <CalendarDays size={16} />
+                        <span>{goalInfo.daysOfWeek.length > 0 ? goalInfo.daysOfWeek.join(', ') : 'Nessun giorno'}</span>
+                      </div>
+                      <div className="progress-bar-bg">
+                        <div className="progress-bar-fill" style={{width: `${goalInfo.progress || 0}%`, background: goalInfo.progress === 100 ? 'var(--success)' : 'var(--primary)'}}></div>
+                      </div>
+                      <span style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>{goalInfo.progress || 0}% completato</span>
+                    </div>
+                  ))}
+
+                  <motion.div 
+                    className="folder-card add-card" 
+                    whileHover={{ y: -5, scale: 1.02 }} 
+                    onClick={() => setCurrentView('select_subject_for_goal')}
+                  >
+                    <div className="add-icon-bg">
+                      <Plus size={36} />
+                    </div>
+                    <h3>Nuovo Obiettivo</h3>
+                  </motion.div>
+
+                </div>
+              </motion.div>
+            )}
+
           </AnimatePresence>
         </div>
       </main>

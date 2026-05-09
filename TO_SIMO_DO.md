@@ -1,1 +1,3 @@
-- NO manual actions required. The web UI was initialized and built automatically. You can start the application by navigating to the target folder and running `npm run dev`.
+[ ] Calendar MCP
+[ ] Interliving tra più obiettivi ( ogni obiettivo di ogni signola materia deve essere parallelizzabile ad altre sessioni di studio di diverse materie )
+[ ] 
