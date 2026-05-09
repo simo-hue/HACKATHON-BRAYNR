@@ -34,7 +34,8 @@ import {
   Mic,
   Square,
   RefreshCw,
-  Zap
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import './App.css';
 
@@ -56,10 +57,102 @@ const getSubjectColor = (subject) => {
   return palette[Math.abs(hash) % palette.length];
 };
 
+const ETHICS_OF_AI_PARTS = [
+  {
+    id: "intro",
+    name: "Introduction",
+    color: "#8b5cf6",
+    chapters: [
+      { id: 9001, name: "Introduction", difficulty: "medio", pages: 18, words: 4800, content: "§ Intervening in the ethics of AI: a systematic delineation of the power-aware approach\n§ We must adopt a critical anthropocentrism in the ethics of AI\n§ The ethics of AI needs to forge an alliance with social philosophy and critical theories\n§ Ethics needs a two-step methodology: from critique to normativity\n§ Structure of the book" }
+    ]
+  },
+  {
+    id: "part1",
+    name: "Part I – The Power of AI",
+    color: "#3b82f6",
+    chapters: [
+      { id: 9002, name: "Ch.1 – What AI Are We Talking About?", difficulty: "medio", pages: 22, words: 6200, content: "§ What concept of AI we use is an ethical and political, not an objective question\n§ Ethics of AI beyond anthropomorphism\n§ Working in the ethics of AI requires cultivating an ethos of seeing power structures\n§ The assemblage perspective on AI is not an alternative ontology but an ethical stance" },
+      { id: 9003, name: "Ch.2 – Human-Aided AI", difficulty: "medio", pages: 28, words: 7900, content: "§ Contemporary AI systems as hybrid computing networks\n§ The first thesis of Human-Aided AI\n§ The second thesis of Human-Aided AI\n§ The third thesis of Human-Aided AI\n§ The reproduction of Human-Aided AI\n§ Click-work\n§ Commercial content moderation and the social costs of click-work" },
+      { id: 9004, name: "Ch.3 – Digital Counter-Enlightenment and the Power of Design", difficulty: "difficile", pages: 24, words: 6800, content: "§ Interface nudges and digital choice architectures\n§ Sealed surfaces and the demobilisation of instrumentality\n§ Subjectivity of digital counter-enlightenment\n§ AI in the history of networked media\n§ The Web as a real-time behavioural laboratory\n§ The dual business model of digital media" },
+      { id: 9005, name: "Ch.4 – Subjectivity and Power in the Ethics of AI", difficulty: "difficile", pages: 20, words: 5600, content: "§ Subjectivity and power in contemporary AI\n§ AI and social structures\n§ AI extractivism and digital colonialism\n§ AI extractivism revisited\n§ Systemic critique and ethics beyond individualism" }
+    ]
+  },
+  {
+    id: "part2",
+    name: "Part II – The Power of Prediction",
+    color: "#10b981",
+    chapters: [
+      { id: 9006, name: "Ch.5 – AI Systems as Prediction Machines", difficulty: "difficile", pages: 22, words: 6100, content: "§ Predictive analytics: functional characterisation\n§ Inference vs prediction: the prediction gap\n§ Predictive performance as the new truth\n§ Frequentist vs Bayesian probability\n§ Automating Sherlock Holmes and the ethics of statistical reasoning\n§ Contemporary AI as prediction power" },
+      { id: 9007, name: "Ch.6 – Predictive Privacy", difficulty: "difficile", pages: 20, words: 5500, content: "§ The concept of predictive privacy (first definition)\n§ A new form of privacy violation\n§ Collective harms: our data affect others\n§ Predictive privacy as a collective interest (second definition)\n§ Targeted advertising\n§ Case study: psychological targeting in election campaigns\n§ Regulating prediction power: why we need a preventive approach" },
+      { id: 9008, name: "Ch.7 – The Culture of Prediction: Ethics and Epistemology", difficulty: "difficile", pages: 18, words: 5000, content: "§ A brief genealogy of predictive targeting in the history of cybernetics\n§ The new culture of algorithmic modelling\n§ The demise of explainability\n§ Two demands of explainability\n§ Case-based vs system-level explainability\n§ Ethics at the end of theory" }
+    ]
+  },
+  {
+    id: "part3",
+    name: "Part III – The Power of Control",
+    color: "#ef4444",
+    chapters: [
+      { id: 9009, name: "Ch.8 – AI Cybernetics", difficulty: "difficile", pages: 16, words: 4400, content: "§ A brief genealogy of predictive targeting in the history of cybernetics\n§ Cybernetics of social structures\n§ The performativity of predictive AI\n§ The cybernetic leviathan?\n§ Prediction power" },
+      { id: 9010, name: "Ch.9 – Opacity in Machine Learning and Predictive Analytics", difficulty: "difficile", pages: 14, words: 3900, content: "§ Control power: manipulation and discrimination\n§ The demise of explainability\n§ Responsibility is greater than instrumental control\n§ Case-based vs system-level explainability" },
+      { id: 9011, name: "Ch.10 – Bias in Cybernetic AI Systems", difficulty: "difficile", pages: 16, words: 4500, content: "§ First- vs second-degree bias\n§ Biased feasibility of feedback loops\n§ Cybernetic leviathan and control power\n§ Ethics of AI beyond individualism" },
+      { id: 9012, name: "Ch.11 – Collective Responsibility in the Ethics of AI", difficulty: "medio", pages: 18, words: 5100, content: "§ Collective responsibility without responsibilisation\n§ Political action without paternalism\n§ Collective responsibility\n§ Ethics of AI as digital enlightenment" }
+    ]
+  },
+  {
+    id: "conclusion",
+    name: "Conclusion – Manifesto for a Power-Aware Ethics of AI",
+    color: "#a855f7",
+    chapters: [
+      { id: 9013, name: "Conclusion – Manifesto", difficulty: "medio", pages: 12, words: 3400, content: "§ Ethics of AI as digital enlightenment\n§ Ethics needs a two-step methodology: from critique to normativity\n§ Working in the ethics of AI requires cultivating an ethos of seeing power structures\n§ We must adopt a critical anthropocentrism in the ethics of AI\n§ Responsibility is greater than instrumental control\n§ Collective responsibility without responsibilisation; political action without paternalism" }
+    ]
+  }
+];
+
+function computeArgumentSchedule(goals, subjectArguments) {
+  const schedule = {};
+  const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  Object.entries(subjectArguments).forEach(([subject, args]) => {
+    if (!args || args.length === 0) return;
+    const goalInfo = goals[subject];
+    if (!goalInfo?.daysOfWeek?.length) return;
+    let deadlineDay = 31;
+    if (goalInfo.deadline) {
+      const d = new Date(goalInfo.deadline);
+      if (d.getFullYear() === 2026 && d.getMonth() === 4) deadlineDay = d.getDate();
+      else if (d < new Date('2026-05-01')) return;
+    }
+    const studyDays = [];
+    for (let day = 1; day <= deadlineDay; day++) {
+      const weekday = dayNames[new Date(2026, 4, day).getDay()];
+      if (goalInfo.daysOfWeek.includes(weekday)) studyDays.push(day);
+    }
+    if (!studyDays.length) return;
+    const sortedArgs = [...args].sort((a, b) => a.order - b.order);
+    const daysPerArg = studyDays.length / sortedArgs.length;
+    sortedArgs.forEach((arg, i) => {
+      const start = Math.floor(i * daysPerArg);
+      const end = Math.floor((i + 1) * daysPerArg);
+      for (let d = start; d < end && d < studyDays.length; d++) {
+        const key = `2026-05-${String(studyDays[d]).padStart(2, '0')}`;
+        if (!schedule[key]) schedule[key] = {};
+        schedule[key][subject] = arg.title;
+      }
+    });
+    const lastConsumed = Math.floor(sortedArgs.length * daysPerArg);
+    for (let d = lastConsumed; d < studyDays.length; d++) {
+      const key = `2026-05-${String(studyDays[d]).padStart(2, '0')}`;
+      if (!schedule[key]) schedule[key] = {};
+      schedule[key][subject] = sortedArgs[sortedArgs.length - 1].title;
+    }
+  });
+  return schedule;
+}
+
 function App() {
   // Navigation & Hierarchy State
   const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal', 'statistiche', 'read_file', 'study_mode', 'calendar'
   const [currentFolder, setCurrentFolder] = useState(null);
+  const [currentPart, setCurrentPart] = useState(null);
   const [newSubjectName, setNewSubjectName] = useState('');
   const [previousView, setPreviousView] = useState(null);
   const [currentFile, setCurrentFile] = useState(null);
@@ -67,7 +160,7 @@ function App() {
   // Mock File System State
   const [fileSystem, setFileSystem] = useState(() => {
     const saved = localStorage.getItem('fileSystem');
-    return saved ? JSON.parse(saved) : {
+    const base = saved ? JSON.parse(saved) : {
       "Intelligenza Artificiale": [
         { name: "Lezione 1 - Intro.pdf", type: "pdf", pages: 12, words: 2500, difficulty: 'semplice' },
         { name: "Reti Neurali.docx", type: "doc", pages: 25, words: 6000, difficulty: 'difficile' }
@@ -79,12 +172,16 @@ function App() {
       "Basi di Dati": [],
       "Diritto Privato": []
     };
+    if (!base["The Ethics of AI"]) {
+      base["The Ethics of AI"] = [];
+    }
+    return base;
   });
 
   // Goals State
   const [goals, setGoals] = useState(() => {
     const saved = localStorage.getItem('goals');
-    return saved ? JSON.parse(saved) : {
+    const base = saved ? JSON.parse(saved) : {
       "Intelligenza Artificiale": {
         deadline: "2026-06-15",
         dailyHours: 2,
@@ -110,6 +207,15 @@ function App() {
         progress: 100
       }
     };
+    if (!base["The Ethics of AI"]) {
+      base["The Ethics of AI"] = {
+        deadline: "2026-05-31",
+        dailyHours: 2,
+        daysOfWeek: ["Lun", "Mer", "Ven"],
+        progress: 8
+      };
+    }
+    return base;
   });
 
   // Stats & Adherence State
@@ -263,6 +369,36 @@ function App() {
     localStorage.setItem('subjectQuestions', JSON.stringify(subjectQuestions));
   }, [subjectQuestions]);
 
+  const [subjectArguments, setSubjectArguments] = useState(() => {
+    const saved = localStorage.getItem('subjectArguments');
+    const base = saved ? JSON.parse(saved) : {};
+    if (!base["The Ethics of AI"]) {
+      base["The Ethics of AI"] = [
+        { id: 1,  title: "Introduction", order: 0 },
+        { id: 2,  title: "Ch.1 – What AI Are We Talking About?", order: 1 },
+        { id: 3,  title: "Ch.2 – Human-Aided AI", order: 2 },
+        { id: 4,  title: "Ch.3 – Digital Counter-Enlightenment and the Power of Design", order: 3 },
+        { id: 5,  title: "Ch.4 – Subjectivity and Power in the Ethics of AI", order: 4 },
+        { id: 6,  title: "Ch.5 – AI Systems as Prediction Machines", order: 5 },
+        { id: 7,  title: "Ch.6 – Predictive Privacy", order: 6 },
+        { id: 8,  title: "Ch.7 – The Culture of Prediction: Ethics and Epistemology", order: 7 },
+        { id: 9,  title: "Ch.8 – AI Cybernetics", order: 8 },
+        { id: 10, title: "Ch.9 – Opacity in ML and Predictive Analytics", order: 9 },
+        { id: 11, title: "Ch.10 – Bias in Cybernetic AI Systems", order: 10 },
+        { id: 12, title: "Ch.11 – Collective Responsibility in the Ethics of AI", order: 11 },
+        { id: 13, title: "Conclusion – Manifesto for a Power-Aware Ethics of AI", order: 12 }
+      ];
+    }
+    return base;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('subjectArguments', JSON.stringify(subjectArguments));
+  }, [subjectArguments]);
+
+  const [argumentManagerOpen, setArgumentManagerOpen] = useState(false);
+  const [newArgumentTitle, setNewArgumentTitle] = useState('');
+
   const [createQuestionState, setCreateQuestionState] = useState({
     isOpen: false,
     type: 'flashcards',
@@ -316,7 +452,33 @@ function App() {
       delete updated[folderToDelete];
       return updated;
     });
+    setSubjectArguments(prev => {
+      const updated = { ...prev };
+      delete updated[folderToDelete];
+      return updated;
+    });
     setFolderToDelete(null);
+  };
+
+  const handleAddArgument = (e) => {
+    e.preventDefault();
+    if (!newArgumentTitle.trim() || !currentFolder) return;
+    const existing = subjectArguments[currentFolder] || [];
+    setSubjectArguments(prev => ({
+      ...prev,
+      [currentFolder]: [...existing, { id: Date.now(), title: newArgumentTitle.trim(), order: existing.length }]
+    }));
+    setNewArgumentTitle('');
+  };
+
+  const handleDeleteArgument = (argId) => {
+    if (!currentFolder) return;
+    setSubjectArguments(prev => ({
+      ...prev,
+      [currentFolder]: (prev[currentFolder] || [])
+        .filter(a => a.id !== argId)
+        .map((a, idx) => ({ ...a, order: idx }))
+    }));
   };
 
   const handleCheckIn = (studied) => {
@@ -624,7 +786,23 @@ function App() {
                 </button>
                 <div>
                   <h1>{currentFolder}</h1>
-                  <p>I tuoi documenti e appunti per questa materia.</p>
+                  <p>{currentFolder === 'The Ethics of AI' ? 'Rainer Mühlhoff · Seleziona un argomento per iniziare.' : 'I tuoi documenti e appunti per questa materia.'}</p>
+                </div>
+              </div>
+            )}
+            {currentView === 'part_folder' && (
+              <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                <button onClick={() => { setCurrentPart(null); setCurrentView('folder'); }} className="btn-back">
+                  <ArrowLeft size={20} />
+                </button>
+                <div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.25rem', fontWeight: 600, fontSize: '0.85rem'}}>
+                    <span style={{cursor:'pointer'}} onClick={() => { setCurrentPart(null); setCurrentView('folder'); }}>{currentFolder}</span>
+                    <ChevronRight size={14} />
+                    <span style={{color: 'var(--text-muted)'}}>{currentPart?.name}</span>
+                  </div>
+                  <h1>{currentPart?.name}</h1>
+                  <p>{currentPart?.chapters?.length} capitoli in questo argomento.</p>
                 </div>
               </div>
             )}
@@ -793,41 +971,130 @@ function App() {
             {/* VIEW: FOLDER (Files inside) */}
             {currentView === 'folder' && (
               <motion.div key="folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
+                {currentFolder === 'The Ethics of AI' ? (
+                  /* BOOK VIEW: show argument/part subfolder cards */
+                  <div className="parts-grid">
+                    {ETHICS_OF_AI_PARTS.map((part, idx) => (
+                      <motion.div
+                        key={part.id}
+                        className="part-folder-card"
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.07 }}
+                        onClick={() => { setCurrentPart(part); setCurrentView('part_folder'); }}
+                        style={{ '--part-color': part.color }}
+                      >
+                        <div className="part-folder-icon">
+                          <BookOpen size={26} color={part.color} />
+                        </div>
+                        <div className="part-folder-info">
+                          <h4>{part.name}</h4>
+                          <span className="part-chapter-count">{part.chapters.length} {part.chapters.length === 1 ? 'capitolo' : 'capitoli'}</span>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  /* REGULAR FOLDER: show flat file list */
+                  <div className="files-list">
+                    {fileSystem[currentFolder]?.map((file, idx) => (
+                      <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+                        <div className="file-icon-bg">
+                          <FileText size={24} />
+                        </div>
+                        <div className="file-info">
+                          <h4>{file.name}</h4>
+                          <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
+                            <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} pag. • {file.words || 3000} parole</span>
+                            <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>{file.difficulty || 'medio'}</span>
+                          </div>
+                        </div>
+                        <div style={{display: 'flex', gap: '0.5rem'}}>
+                          <button className="btn-read" onClick={() => handleReadFile(file)}>Leggi</button>
+                          <button className="btn-study" onClick={() => handleStudyFile(file)}><Zap size={16} /> Studia</button>
+                        </div>
+                      </motion.div>
+                    ))}
+                    {fileSystem[currentFolder]?.length === 0 && (
+                      <div className="empty-state">Nessun file presente in questa materia.</div>
+                    )}
+                    <motion.div
+                      className="file-card add-file-card"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (fileSystem[currentFolder]?.length || 0) * 0.05 }}
+                      onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
+                    >
+                      <Plus size={24} /> Aggiungi altre risorse
+                    </motion.div>
+                  </div>
+                )}
+
+                {/* ARGUMENT MANAGER */}
+                <div className="arguments-section" style={{ marginTop: '2rem' }}>
+                  <button className="arguments-section-header" onClick={() => setArgumentManagerOpen(prev => !prev)}>
+                    <BookOpen size={18} />
+                    <span>Argomenti / Capitoli</span>
+                    <span className="arg-count-badge">{(subjectArguments[currentFolder] || []).length}</span>
+                    <ChevronRight size={16} style={{ marginLeft: 'auto', transform: argumentManagerOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                  </button>
+
+                  {argumentManagerOpen && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="arguments-list-container">
+                      {(subjectArguments[currentFolder] || []).sort((a, b) => a.order - b.order).map((arg, idx) => (
+                        <div key={arg.id} className="argument-item">
+                          <span className="argument-order-badge">{idx + 1}</span>
+                          <span className="argument-title">{arg.title}</span>
+                          <button className="btn-delete-argument" onClick={() => handleDeleteArgument(arg.id)}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      {(subjectArguments[currentFolder] || []).length === 0 && (
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>Nessun argomento ancora. Aggiungine uno qui sotto.</p>
+                      )}
+                      <form onSubmit={handleAddArgument} className="add-argument-form">
+                        <input
+                          type="text"
+                          className="input-argument"
+                          placeholder="Es. Capitolo 3: Algoritmi di ricerca..."
+                          value={newArgumentTitle}
+                          onChange={e => setNewArgumentTitle(e.target.value)}
+                        />
+                        <button type="submit" className="btn-add-argument" disabled={!newArgumentTitle.trim()}>
+                          <Plus size={16} />
+                        </button>
+                      </form>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* VIEW: PART FOLDER (chapters inside one argument part) */}
+            {currentView === 'part_folder' && currentPart && (
+              <motion.div key="part_folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
                 <div className="files-list">
-                  {fileSystem[currentFolder]?.map((file, idx) => (
-                    <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                      <div className="file-icon-bg">
-                        <FileText size={24} />
+                  {currentPart.chapters.map((chapter, idx) => (
+                    <motion.div key={chapter.id} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}>
+                      <div className="file-icon-bg" style={{ background: `${currentPart.color}22`, border: `1px solid ${currentPart.color}44` }}>
+                        <FileText size={24} color={currentPart.color} />
                       </div>
                       <div className="file-info">
-                        <h4>{file.name}</h4>
+                        <h4>{chapter.name}</h4>
                         <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
-                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} pag. • {file.words || 3000} parole</span>
-                          <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>
-                            {file.difficulty || 'medio'}
+                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{chapter.pages} pag. • {chapter.words} parole</span>
+                          <span className={`difficulty-badge ${chapter.difficulty}`}>{chapter.difficulty}</span>
+                          <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
+                            {chapter.content.split('\n').filter(l => l.trim()).length} argomenti
                           </span>
                         </div>
                       </div>
                       <div style={{display: 'flex', gap: '0.5rem'}}>
-                        <button className="btn-read" onClick={() => handleReadFile(file)}>Leggi</button>
-                        <button className="btn-study" onClick={() => handleStudyFile(file)}><Zap size={16} /> Studia</button>
+                        <button className="btn-read" onClick={() => { setPreviousView('part_folder'); handleReadFile(chapter); }}>Leggi</button>
+                        <button className="btn-study" onClick={() => { setPreviousView('part_folder'); handleStudyFile(chapter); }}><Zap size={16} /> Studia</button>
                       </div>
                     </motion.div>
                   ))}
-                  
-                  {fileSystem[currentFolder]?.length === 0 && (
-                    <div className="empty-state">
-                      Nessun file presente in questa materia.
-                    </div>
-                  )}
-
-                  <motion.div 
-                    className="file-card add-file-card"
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (fileSystem[currentFolder]?.length || 0) * 0.05 }}
-                    onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
-                  >
-                    <Plus size={24} /> Aggiungi altre risorse
-                  </motion.div>
                 </div>
               </motion.div>
             )}
@@ -836,19 +1103,33 @@ function App() {
             {currentView === 'read_file' && (
               <motion.div key="read_file" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="reader-container">
                 <div className="reader-header">
-                  <button onClick={() => setCurrentView('folder')} className="btn-back" style={{padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <button onClick={() => setCurrentView(previousView === 'part_folder' ? 'part_folder' : 'folder')} className="btn-back" style={{padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                     <ArrowLeft size={20} />
                   </button>
                   <h2 style={{margin: 0}}>{currentFile?.name}</h2>
                 </div>
                 <div className="reader-content">
                   {currentFile?.content ? (
-                    <>
-                      <h3>Trascrizione Audio</h3>
-                      <div className="transcription-box" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', marginTop: '1rem' }}>
-                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0 }}>{currentFile.content}</p>
-                      </div>
-                    </>
+                    currentFile.content.includes('§') ? (
+                      <>
+                        <h3 style={{ marginBottom: '1.25rem', color: 'var(--text-main)' }}>Argomenti del Capitolo</h3>
+                        <div className="chapter-sections">
+                          {currentFile.content.split('\n').filter(l => l.trim()).map((section, i) => (
+                            <div key={i} className="chapter-section-card">
+                              <span className="section-number">{i + 1}</span>
+                              <span className="section-title">{section.replace('§ ', '')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <h3>Trascrizione Audio</h3>
+                        <div className="transcription-box" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', marginTop: '1rem' }}>
+                          <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0 }}>{currentFile.content}</p>
+                        </div>
+                      </>
+                    )
                   ) : (
                     <>
                       <h3>Introduzione</h3>
@@ -1048,62 +1329,72 @@ function App() {
                 </div>
                 
                 <div className="calendar-grid">
-                  {[
-                    null, null, null, null, 1, 2, 3,
-                    4, 5, 6, 7, 8, 9, 10,
-                    11, 12, 13, 14, 15, 16, 17,
-                    18, 19, 20, 21, 22, 23, 24,
-                    25, 26, 27, 28, 29, 30, 31,
-                    null, null, null, null
-                  ].map((day, idx) => {
-                    const dayName = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"][idx % 7];
-                    const activeSessions = [];
-                    
-                    if (day) {
-                      Object.entries(goals).forEach(([subject, goalInfo]) => {
-                        if (goalInfo.daysOfWeek.includes(dayName)) {
-                          activeSessions.push({ subject, hours: goalInfo.dailyHours, progress: goalInfo.progress });
-                        }
-                      });
-                    }
-                    
-                    return (
-                      <div key={idx} className={`calendar-cell ${day ? '' : 'empty'} ${day === 9 ? 'today' : ''}`}>
-                        {day && <span className="day-number">{day}</span>}
-                        <div className="sessions-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          {activeSessions.length > 0 && (
-                            <div className="interleaving-bar" style={{ display: 'flex', height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', marginTop: '0.5rem' }}>
-                              {activeSessions.map((session, sIdx) => {
-                                const totalHours = activeSessions.reduce((acc, s) => acc + s.hours, 0);
-                                const widthPercent = (session.hours / totalHours) * 100;
-                                return (
-                                  <div 
-                                    key={sIdx} 
-                                    style={{ 
-                                      width: `${widthPercent}%`, 
-                                      background: getSubjectColor(session.subject),
-                                      opacity: session.progress === 100 ? 0.4 : 1,
-                                      transition: 'all 0.3s ease'
-                                    }}
-                                    title={`${session.subject} (${session.hours}h)`}
-                                  />
-                                );
-                              })}
-                            </div>
-                          )}
-                          
-                          <div className="sessions-text-list" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                            {activeSessions.map((session, sIdx) => (
-                              <div key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '2px' }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: getSubjectColor(session.subject), flexShrink: 0 }}></span>
-                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.subject} ({session.hours}h)</span>
+                  {(() => {
+                    const argumentSchedule = computeArgumentSchedule(goals, subjectArguments);
+                    return [
+                      null, null, null, null, 1, 2, 3,
+                      4, 5, 6, 7, 8, 9, 10,
+                      11, 12, 13, 14, 15, 16, 17,
+                      18, 19, 20, 21, 22, 23, 24,
+                      25, 26, 27, 28, 29, 30, 31,
+                      null, null, null, null
+                    ].map((day, idx) => {
+                      const dayName = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"][idx % 7];
+                      const activeSessions = [];
+                      const dayKey = day ? `2026-05-${String(day).padStart(2, '0')}` : null;
+                      const dayArguments = (dayKey && argumentSchedule[dayKey]) || {};
+
+                      if (day) {
+                        Object.entries(goals).forEach(([subject, goalInfo]) => {
+                          if (goalInfo.daysOfWeek.includes(dayName)) {
+                            activeSessions.push({ subject, hours: goalInfo.dailyHours, progress: goalInfo.progress });
+                          }
+                        });
+                      }
+
+                      return (
+                        <div key={idx} className={`calendar-cell ${day ? '' : 'empty'} ${day === 9 ? 'today' : ''}`}>
+                          {day && <span className="day-number">{day}</span>}
+                          <div className="sessions-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            {activeSessions.length > 0 && (
+                              <div className="interleaving-bar" style={{ display: 'flex', height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', marginTop: '0.5rem' }}>
+                                {activeSessions.map((session, sIdx) => {
+                                  const totalHours = activeSessions.reduce((acc, s) => acc + s.hours, 0);
+                                  const widthPercent = (session.hours / totalHours) * 100;
+                                  return (
+                                    <div
+                                      key={sIdx}
+                                      style={{
+                                        width: `${widthPercent}%`,
+                                        background: getSubjectColor(session.subject),
+                                        opacity: session.progress === 100 ? 0.4 : 1,
+                                        transition: 'all 0.3s ease'
+                                      }}
+                                      title={`${session.subject} (${session.hours}h)`}
+                                    />
+                                  );
+                                })}
                               </div>
-                            ))}
+                            )}
+
+                            <div className="sessions-text-list" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                              {activeSessions.map((session, sIdx) => (
+                                <div key={sIdx} style={{ marginBottom: '3px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: getSubjectColor(session.subject), flexShrink: 0 }}></span>
+                                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.subject} ({session.hours}h)</span>
+                                  </div>
+                                  {dayArguments[session.subject] && (
+                                    <div className="calendar-argument-chip">{dayArguments[session.subject]}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               </motion.div>
             )}
