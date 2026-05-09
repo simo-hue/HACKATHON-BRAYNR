@@ -421,6 +421,18 @@
   overflow: hidden;
 }
 
+.floating-element {
+  position: absolute;
+  pointer-events: none;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
 .upload-zone.drag-active {
   border-color: var(--success);
   background: rgba(16, 185, 129, 0.05);
@@ -440,6 +452,7 @@
 }
 
 .btn-upload {
+  margin-top: 2rem;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
   border: none;
@@ -464,16 +477,34 @@
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
-  background: rgba(0,0,0,0.2);
-  padding: 1rem;
-  border-radius: 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  padding: 1.5rem;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 .preview-title { font-size: 1rem; margin-bottom: 1rem; color: var(--text-main); display: flex; alignItems: center; gap: 0.5rem; }
 .preview-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .preview-item { display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 8px; font-size: 0.875rem; color: #e2e8f0; }
 
-.btn-start-analysis { width: 100%; margin-top: 1rem; padding: 0.75rem; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
-.btn-start-analysis:hover { background: #059669; }
+.btn-start-analysis { 
+  width: 100%; 
+  margin-top: 1.5rem; 
+  padding: 0.875rem; 
+  background: linear-gradient(135deg, var(--success) 0%, #059669 100%); 
+  color: white; 
+  border: none; 
+  border-radius: 12px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: all 0.3s ease; 
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+.btn-start-analysis:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
 
 /* Set Goals View */
 .goals-view-container {
@@ -727,3 +758,45 @@
   background: var(--success);
   border-radius: 3px;
 }
+
+/* Difficulty Selector in Preview */
+.difficulty-selector {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+}
+
+.diff-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.diff-btn:hover {
+  color: var(--text-main);
+}
+
+.diff-btn.active.semplice { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.diff-btn.active.medio { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.diff-btn.active.difficile { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+/* Difficulty Badge in File Card */
+.difficulty-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.difficulty-badge.semplice { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.difficulty-badge.medio { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.difficulty-badge.difficile { background: rgba(239, 68, 68, 0.1); color: #ef4444; }

@@ -27,3 +27,15 @@
 - [2026-05-09/19:10]: Simulazione Progetti Completati e Logica Stima IA
   - *Details*: Simulata la presenza di 3 progetti completati nello stato per sbloccare la stima dell'IA. Aggiunta una condizione per cui la stima si attiva solo con >= 3 progetti completati.
   - *Tech Notes*: Modificato `App.jsx`. Aggiunti 3 progetti con `progress: 100` nello stato `goals`. Aggiornata la vista `suggestion-box` per mostrare un messaggio di attesa se i progetti completati sono < 3. Aggiornata la vista `obiettivi` per mostrare il progresso reale e un badge di completamento.
+
+- [2026-05-09/19:15]: Gestione Difficoltà e Metriche File
+  - *Details*: Implementata la possibilità per l'utente di impostare la difficoltà (Semplice, Medio, Difficile) per ogni file caricato tramite una UI professionale con selettore. Aggiunta la simulazione di metriche base (pagine e parole) per ogni file.
+  - *Tech Notes*: Modificati `App.jsx` e `App.css`. Aggiunto lo stato per la difficoltà nel preview dell'upload e salvato nel `fileSystem`. Aggiornata la vista `folder` per mostrare i badge di difficoltà e le metriche.
+
+- [2026-05-09/19:20]: Pulizia e Miglioramento UI Upload
+  - *Details*: Risolti i problemi visivi nella schermata di upload. Rimosse le icone fluttuanti che si sovrapponevano e reso il box di anteprima dei file coerente con lo stile glassmorphic dell'app.
+  - *Tech Notes*: Modificati `App.jsx` e `App.css`. Rimosse le icone `FileText`, `Video`, `Volume2` fluttuanti. Aggiornati gli stili di `.files-preview-box` e `.btn-start-analysis`.
+
+- [2026-05-09/19:22]: Spaziatura Pulsante Upload
+  - *Details*: Aggiunto spazio tra il testo descrittivo e il pulsante "Seleziona dal computer" nella zona di upload per migliorare la leggibilità e l'estetica.
+  - *Tech Notes*: Modificato `App.css` aggiungendo `margin-top: 2rem` a `.btn-upload`.

@@ -36,11 +36,11 @@ function App() {
   // Mock File System State
   const [fileSystem, setFileSystem] = useState({
     "Intelligenza Artificiale": [
-      { name: "Lezione 1 - Intro.pdf", type: "pdf" },
-      { name: "Reti Neurali.docx", type: "doc" }
+      { name: "Lezione 1 - Intro.pdf", type: "pdf", pages: 12, words: 2500, difficulty: 'semplice' },
+      { name: "Reti Neurali.docx", type: "doc", pages: 25, words: 6000, difficulty: 'difficile' }
     ],
     "Fisica Quantistica": [
-      { name: "Appunti Schrödinger.pdf", type: "pdf" }
+      { name: "Appunti Schrödinger.pdf", type: "pdf", pages: 8, words: 1800, difficulty: 'medio' }
     ]
   });
 
@@ -113,6 +113,14 @@ function App() {
     }
   };
 
+  const setFileDifficulty = (idx, difficulty) => {
+    setUploadFiles(prev => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], difficulty };
+      return updated;
+    });
+  };
+
   const handleSaveUploadAndGoToGoals = () => {
     const targetFolder = currentView === 'upload_files' ? newSubjectName : currentFolder;
     
@@ -122,7 +130,13 @@ function App() {
         updated[targetFolder] = [];
       }
       
-      const formattedFiles = uploadFiles.map(f => ({ name: f.name, type: "pdf" }));
+      const formattedFiles = uploadFiles.map(f => ({ 
+        name: f.name, 
+        type: "pdf",
+        difficulty: f.difficulty,
+        pages: f.pages,
+        words: f.words
+      }));
       updated[targetFolder] = [...updated[targetFolder], ...formattedFiles];
       return updated;
     });
@@ -184,12 +198,24 @@ function App() {
   const onDrop = useCallback((e) => {
     e.preventDefault(); e.stopPropagation(); setIsDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setUploadFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+      const newFiles = Array.from(e.dataTransfer.files).map(f => ({
+        name: f.name,
+        difficulty: 'medio',
+        pages: Math.floor(Math.random() * 40) + 10,
+        words: Math.floor(Math.random() * 10000) + 2000
+      }));
+      setUploadFiles(prev => [...prev, ...newFiles]);
     }
   }, []);
   const handleFileInput = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setUploadFiles(prev => [...prev, ...Array.from(e.target.files)]);
+      const newFiles = Array.from(e.target.files).map(f => ({
+        name: f.name,
+        difficulty: 'medio',
+        pages: Math.floor(Math.random() * 40) + 10,
+        words: Math.floor(Math.random() * 10000) + 2000
+      }));
+      setUploadFiles(prev => [...prev, ...newFiles]);
     }
   };
 
@@ -367,7 +393,12 @@ function App() {
                       </div>
                       <div className="file-info">
                         <h4>{file.name}</h4>
-                        <span>Analizzato e pronto per lo studio</span>
+                        <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
+                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} pag. • {file.words || 3000} parole</span>
+                          <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>
+                            {file.difficulty || 'medio'}
+                          </span>
+                        </div>
                       </div>
                       <button className="btn-study">Studia</button>
                     </motion.div>
@@ -410,9 +441,6 @@ function App() {
             {currentView === 'upload_files' && (
               <motion.div key="upload_files" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="upload-container">
                 <div className={`upload-zone ${isDragActive ? 'drag-active' : ''}`} onDragEnter={onDragEnter} onDragLeave={onDragLeave} onDragOver={onDragOver} onDrop={onDrop}>
-                  <div className="floating-element" style={{ top: '10%', left: '15%', color: 'rgba(139, 92, 246, 0.4)' }}><FileText size={32} /></div>
-                  <div className="floating-element" style={{ top: '20%', right: '15%', color: 'rgba(59, 130, 246, 0.4)' }}><Video size={40} /></div>
-                  <div className="floating-element" style={{ bottom: '15%', left: '20%', color: 'rgba(16, 185, 129, 0.4)' }}><Volume2 size={28} /></div>
 
                   <div className="upload-icon-wrapper" style={{ transform: isDragActive ? 'scale(1.1)' : 'scale(1)', transition: '0.2s' }}>
                     <UploadCloud size={40} />
@@ -430,9 +458,25 @@ function App() {
                         <h3 className="preview-title"><CheckCircle2 size={18} color="#10b981" /> File pronti per l'analisi</h3>
                         <div className="preview-list">
                           {uploadFiles.map((file, idx) => (
-                            <div key={idx} className="preview-item">
-                              <FileIcon size={20} color="#a5b4fc" />
-                              <span>{file.name}</span>
+                            <div key={idx} className="preview-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                                <FileIcon size={20} color="#a5b4fc" />
+                                <div>
+                                  <span style={{display: 'block', fontWeight: 500}}>{file.name}</span>
+                                  <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{file.pages} pag. • {file.words} parole</span>
+                                </div>
+                              </div>
+                              <div className="difficulty-selector">
+                                {['semplice', 'medio', 'difficile'].map(level => (
+                                  <button 
+                                    key={level} 
+                                    className={`diff-btn ${file.difficulty === level ? 'active' : ''} ${level}`}
+                                    onClick={() => setFileDifficulty(idx, level)}
+                                  >
+                                    {level.charAt(0).toUpperCase() + level.slice(1)}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           ))}
                         </div>
