@@ -181,7 +181,7 @@ function App() {
   const [folderToDelete, setFolderToDelete] = useState(null);
   const [calendarDate, setCalendarDate] = useState(new Date(2026, 4, 1)); // May 2026
 
-  const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Upload State
   const [isDragActive, setIsDragActive] = useState(false);
@@ -326,12 +326,14 @@ function App() {
   const [needsCheckIn, setNeedsCheckIn] = useState(true);
 
   const yesterday = new Date(Date.now() - 86400000);
-  const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNamesIt = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
   const yesterdayDayName = dayNames[yesterday.getDay()];
+  const yesterdayDayNameIt = dayNamesIt[yesterday.getDay()];
 
   const yesterdaySubjects = [];
   Object.entries(goals).forEach(([subject, goalInfo]) => {
-    if (goalInfo.daysOfWeek.includes(yesterdayDayName)) {
+    if (goalInfo.daysOfWeek.includes(yesterdayDayName) || goalInfo.daysOfWeek.includes(yesterdayDayNameIt)) {
       yesterdaySubjects.push(subject);
     }
   });
@@ -1263,12 +1265,13 @@ function App() {
 
                 <div className="calendar-grid">
                   {getCalendarDays(calendarDate).map((day, idx) => {
-                    const dayName = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][idx % 7];
+                    const dayNameEn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][idx % 7];
+                    const dayNameIt = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"][idx % 7];
                     const activeSessions = [];
 
                     if (day) {
                       Object.entries(goals).forEach(([subject, goalInfo]) => {
-                        if (goalInfo.daysOfWeek.includes(dayName)) {
+                        if (goalInfo.daysOfWeek.includes(dayNameEn) || goalInfo.daysOfWeek.includes(dayNameIt)) {
                           activeSessions.push({ subject, hours: goalInfo.dailyHours, progress: goalInfo.progress });
                         }
                       });

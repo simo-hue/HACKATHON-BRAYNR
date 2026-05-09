@@ -163,3 +163,7 @@
 - [2026-05-09/22:30]: Full Translation to English
   - *Details*: Translated all user-facing text from Italian to English, including sidebar, calendar, upload section, goals, and statistics views.
   - *Tech Notes*: Modified `App.jsx`. Updated locale strings to `en-US` for date formatting and translated all hardcoded Italian strings in JSX.
+
+- [2026-05-09/22:35]: Fix Calendar Empty Issue
+  - *Details*: Fixed an issue where the calendar appeared empty after translation because it was looking for English day names while existing data in `localStorage` used Italian names.
+  - *Tech Notes*: Modified `App.jsx`. Updated `DAYS` and `dayNames` to English, but added fallback checks for Italian day names in both the calendar loop and check-in logic to support legacy data.
