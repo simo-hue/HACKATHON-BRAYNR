@@ -175,3 +175,15 @@
 - [2026-05-09/22:35]: Keywords/Hints for Question Answering
   - *Details*: Added the ability to define keywords or hints during the creation of flashcards and open questions. During the study phase, users can click to reveal these hints if they are having difficulty answering.
   - *Tech Notes*: Modified `App.jsx` to extend `createQuestionState` and `studyState` to include hints management. Added input field and badges for hints in the creation modal. In the study modes (flashcards and QA), added a hints section that conditionally renders and unmasks individual hints when clicked by the user, updating `activeHints` state.
+
+- [2026-05-09/22:42]: Modal UI Improvements & Multi-add
+  - *Details*: Improved the user interface of the modal used for adding flashcards and questions. It now features a more visually appealing header with a descriptive subtitle. The "Save" button was transformed into "Add Question" and the modal no longer closes automatically upon adding, allowing the user to seamlessly add multiple questions in succession. The "Cancel" button was changed to "Done" to better reflect its new purpose.
+  - *Tech Notes*: Modified `App.jsx` CSS-in-JS styles for the `.modal-header` and `.modal-footer`. Updated the `handleCreateQuestion` to retain `isOpen: true` inside `createQuestionState`, clearing only the form inputs.
+
+- [2026-05-09/22:45]: UI Refactoring: Two-column Layout for Question Creation
+  - *Details*: Redesigned the question creation modal to feature a two-column layout, significantly reducing vertical scrolling. The left column now contains the Question and Answer input fields, while the right column hosts the Hints management interface. Additionally, the modal's maximum width was increased to properly accommodate the side-by-side arrangement.
+  - *Tech Notes*: Modified `App.jsx` inline styles within the modal `form` to use a flex container (`display: flex`, `gap: 2rem`). Adjusted `App.css` by changing `.modal-content`'s `max-width` from `500px` to `800px`.
+
+- [2026-05-09/22:46]: Modal Centering Fix
+  - *Details*: Fixed a layout bug where the question creation modal was not perfectly centered relative to the entire screen. The modal was previously offset to the right because it was placed inside an animated container that established a new CSS containing block.
+  - *Tech Notes*: Moved the `createQuestionState.isOpen` modal render block in `App.jsx` out of the `<AnimatePresence>` component and placed it directly inside the `<main>` tag, ensuring that its `position: fixed` behaves relative to the viewport.

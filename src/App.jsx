@@ -545,7 +545,7 @@ function App() {
       return updated;
     });
 
-    setCreateQuestionState({ isOpen: false, type: 'flashcards', q: '', a: '', hints: [], newHint: '' });
+    setCreateQuestionState(prev => ({ ...prev, q: '', a: '', hints: [], newHint: '' }));
   };
 
   // Sidebar navigation handlers
@@ -1086,56 +1086,6 @@ function App() {
                     </button>
                   </div>
                 </div>
-
-                {createQuestionState.isOpen && (
-                  <div className="modal-overlay" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })}>
-                    <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} onClick={(e) => e.stopPropagation()}>
-                      <div className="modal-header">
-                        <BrainCircuit size={32} color="var(--primary)" />
-                        <h3>Create Question for Testing</h3>
-                      </div>
-                      <div className="modal-body">
-                        <div className="study-toggle" style={{ margin: '0 0 1.5rem 0', width: '100%', display: 'flex' }}>
-                          <button type="button" className={`toggle-btn ${createQuestionState.type === 'flashcards' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({ ...createQuestionState, type: 'flashcards' })}>Flashcard</button>
-                          <button type="button" className={`toggle-btn ${createQuestionState.type === 'qa' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({ ...createQuestionState, type: 'qa' })}>Open Question</button>
-                        </div>
-                        <form onSubmit={handleCreateQuestion}>
-                          <div className="form-group" style={{ marginBottom: '1rem' }}>
-                            <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Question</label>
-                            <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem' }} placeholder="Enter the question..." value={createQuestionState.q} onChange={e => setCreateQuestionState({ ...createQuestionState, q: e.target.value })} required />
-                          </div>
-                          {createQuestionState.type === 'flashcards' && (
-                            <div className="form-group" style={{ marginBottom: '1rem' }}>
-                              <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Answer (for you)</label>
-                              <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem' }} placeholder="Enter the answer..." value={createQuestionState.a} onChange={e => setCreateQuestionState({ ...createQuestionState, a: e.target.value })} required />
-                            </div>
-                          )}
-                          <div className="form-group" style={{ marginBottom: '1rem' }}>
-                            <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Hints / Keywords (Optional)</label>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                              <input type="text" className="input-subject" style={{ marginBottom: 0 }} placeholder="Add a hint..." value={createQuestionState.newHint || ''} onChange={e => setCreateQuestionState({ ...createQuestionState, newHint: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddHint(e); } }} />
-                              <button type="button" className="btn-save" onClick={handleAddHint} style={{ padding: '0.5rem 1rem' }}>Add</button>
-                            </div>
-                            {createQuestionState.hints && createQuestionState.hints.length > 0 && (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                {createQuestionState.hints.map((hint, idx) => (
-                                  <span key={idx} style={{ backgroundColor: 'var(--surface)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)' }}>
-                                    {hint}
-                                    <XCircle size={14} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => handleRemoveHint(idx)} />
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <div className="modal-footer" style={{ marginTop: '2rem' }}>
-                            <button type="button" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })} className="btn-skip">Cancel</button>
-                            <button type="submit" className="btn-save">Save</button>
-                          </div>
-                        </form>
-                      </div>
-                    </motion.div>
-                  </div>
-                )}
               </motion.div>
             )}
 
@@ -1814,6 +1764,73 @@ function App() {
 
           </AnimatePresence>
         </div>
+
+        {createQuestionState.isOpen && (
+          <div className="modal-overlay" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })}>
+            <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header" style={{ flexDirection: 'column', textAlign: 'center', paddingBottom: 0 }}>
+                <div style={{ backgroundColor: 'var(--surface)', padding: '1rem', borderRadius: '50%', marginBottom: '1rem', display: 'inline-flex' }}>
+                  <BrainCircuit size={32} color="var(--primary)" />
+                </div>
+                <h3 style={{ margin: 0 }}>Create Questions</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem', marginBottom: 0 }}>Add multiple flashcards or open questions to test your knowledge.</p>
+              </div>
+              <div className="modal-body" style={{ paddingTop: '1.5rem' }}>
+                <div className="study-toggle" style={{ margin: '0 0 1.5rem 0', width: '100%', display: 'flex' }}>
+                  <button type="button" className={`toggle-btn ${createQuestionState.type === 'flashcards' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({ ...createQuestionState, type: 'flashcards' })}>Flashcard</button>
+                  <button type="button" className={`toggle-btn ${createQuestionState.type === 'qa' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCreateQuestionState({ ...createQuestionState, type: 'qa' })}>Open Question</button>
+                </div>
+                <form onSubmit={handleCreateQuestion}>
+                  <div style={{ display: 'flex', gap: '2rem' }}>
+                    {/* Left Column: Q & A */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div className="form-group" style={{ marginBottom: '1rem', flex: createQuestionState.type === 'flashcards' ? 1 : 'none', display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Question</label>
+                        <textarea className="input-subject" style={{ minHeight: createQuestionState.type === 'flashcards' ? '80px' : '150px', marginBottom: 0, fontSize: '1rem', flex: 1 }} placeholder="Enter the question..." value={createQuestionState.q} onChange={e => setCreateQuestionState({ ...createQuestionState, q: e.target.value })} required />
+                      </div>
+                      {createQuestionState.type === 'flashcards' && (
+                        <div className="form-group" style={{ marginBottom: '0', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                          <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Answer (for you)</label>
+                          <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem', flex: 1 }} placeholder="Enter the answer..." value={createQuestionState.a} onChange={e => setCreateQuestionState({ ...createQuestionState, a: e.target.value })} required />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: Hints */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div className="form-group" style={{ marginBottom: '0', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Hints / Keywords (Optional)</label>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <input type="text" className="input-subject" style={{ marginBottom: 0 }} placeholder="Add a hint..." value={createQuestionState.newHint || ''} onChange={e => setCreateQuestionState({ ...createQuestionState, newHint: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddHint(e); } }} />
+                          <button type="button" className="btn-save" onClick={handleAddHint} style={{ padding: '0.5rem 1rem' }}>Add</button>
+                        </div>
+                        <div style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.1)', padding: '1rem', borderRadius: '0.5rem', overflowY: 'auto', minHeight: '120px' }}>
+                          {createQuestionState.hints && createQuestionState.hints.length > 0 ? (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignContent: 'flex-start' }}>
+                              {createQuestionState.hints.map((hint, idx) => (
+                                <span key={idx} style={{ backgroundColor: 'var(--surface)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)' }}>
+                                  {hint}
+                                  <XCircle size={14} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => handleRemoveHint(idx)} />
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', display: 'block', textAlign: 'center', marginTop: '1rem' }}>No hints added yet.</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="modal-footer" style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button type="button" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })} className="btn-skip" style={{ margin: 0 }}>Done</button>
+                    <button type="submit" className="btn-save" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Plus size={18} /> Add Question</button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </main>
     </div>
   );
