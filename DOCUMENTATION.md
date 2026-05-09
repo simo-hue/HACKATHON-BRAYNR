@@ -187,3 +187,19 @@
 - [2026-05-09/22:46]: Modal Centering Fix
   - *Details*: Fixed a layout bug where the question creation modal was not perfectly centered relative to the entire screen. The modal was previously offset to the right because it was placed inside an animated container that established a new CSS containing block.
   - *Tech Notes*: Moved the `createQuestionState.isOpen` modal render block in `App.jsx` out of the `<AnimatePresence>` component and placed it directly inside the `<main>` tag, ensuring that its `position: fixed` behaves relative to the viewport.
+
+- [2026-05-09/22:52]: Flashcard Session Summary Screen
+  - *Details*: Enhanced the flashcard study experience by introducing a summary screen at the end of a study session. Instead of abruptly returning to the folder view, the user now sees a visually appealing summary containing the total number of cards reviewed, along with a breakdown of their answers ('Hard', 'Unsure', 'Easy') categorized by color.
+  - *Tech Notes*: Updated `studyState` to track a `results` array and a `showResults` boolean flag. Modified `handleNextFlashcard` to accept the answer type and update the state accordingly. Added a conditional rendering block in `App.jsx` to display the  UI when all flashcards in the set are completed.
+
+- [2026-05-09/22:52]: Flashcard Session Summary Screen
+  - *Details*: Enhanced the flashcard study experience by introducing a summary screen at the end of a study session. Instead of abruptly returning to the folder view, the user now sees a visually appealing summary containing the total number of cards reviewed, along with a breakdown of their answers ('Hard', 'Unsure', 'Easy') categorized by color.
+  - *Tech Notes*: Updated `studyState` to track a `results` array and a `showResults` boolean flag. Modified `handleNextFlashcard` to accept the answer type and update the state accordingly. Added a conditional rendering block in `App.jsx` to display the `.flashcard-summary` UI when all flashcards in the set are completed.
+
+- [2026-05-09/23:01]: QA Study Mode UX Improvements
+  - *Details*: Improved the user experience when answering open questions via voice. The main action button has been renamed from "Evaluate Answer with AI" to "Check answer". Additionally, a new "Re-record" button was added alongside it to allow users to easily discard their current transcript and try again without leaving the page or proceeding to evaluation.
+  - *Tech Notes*: Modified `App.jsx` in the `studyState.type === 'qa'` render block. Replaced the single full-width button with a flex container holding the "Re-record" (`btn-skip`) and "Check answer" (`btn-save`) buttons. The re-record action simply resets `studyState.transcript` to an empty string, triggering the microphone UI to reappear.
+
+- [2026-05-09/23:10]: Floating Action Button for Question Creation
+  - *Details*: Replaced the inline "Create Flashcard / Question" button inside the file visualization view with a modern Floating Action Button (FAB) containing a "+" icon, positioned in the bottom right corner. This ensures the action is always accessible regardless of scroll position and improves overall aesthetics.
+  - *Tech Notes*: Modified `App.jsx` to swap the inline button structure with a `<button className="fab-button">`. Added `.fab-button` CSS styles in `App.css` featuring a fixed position, gradient background, z-index management, and hover/active micro-animations.

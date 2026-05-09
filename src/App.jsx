@@ -405,7 +405,9 @@ function App() {
     feedback: null,
     isProcessing: false,
     score: null,
-    activeHints: []
+    activeHints: [],
+    results: [],
+    showResults: false
   });
 
   const [subjectQuestions, setSubjectQuestions] = useState(() => {
@@ -669,11 +671,12 @@ function App() {
     }, 2000);
   };
 
-  const handleNextFlashcard = () => {
+  const handleNextFlashcard = (answer) => {
+    const newResults = [...(studyState.results || []), answer];
     if (studyState.currentIndex < currentSubjectFlashcards.length - 1) {
-      setStudyState({ ...studyState, currentIndex: studyState.currentIndex + 1, isFlipped: false, activeHints: [] });
+      setStudyState({ ...studyState, currentIndex: studyState.currentIndex + 1, isFlipped: false, activeHints: [], results: newResults });
     } else {
-      setCurrentView('folder'); // Or show completion screen
+      setStudyState({ ...studyState, isFlipped: false, activeHints: [], results: newResults, showResults: true });
     }
   };
 
@@ -847,7 +850,7 @@ function App() {
 
   const handleStudyFile = (file) => {
     setCurrentFile(file);
-    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null, activeHints: [] });
+    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null, activeHints: [], results: [], showResults: false });
     setCurrentView('study_mode');
   };
 
@@ -855,7 +858,7 @@ function App() {
     e.stopPropagation();
     setCurrentSubFolder(folderItem.name);
     setCurrentFile({ name: folderItem.name });
-    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null, activeHints: [] });
+    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null, activeHints: [], results: [], showResults: false });
     setCurrentView('study_mode');
   };
 
@@ -1304,11 +1307,13 @@ function App() {
                     </>
                   )}
 
-                  <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
-                    <button className="btn-save" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: true })}>
-                      <Plus size={18} /> Create Flashcard / Question
-                    </button>
-                  </div>
+                  <button 
+                    className="fab-button" 
+                    onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: true })}
+                    title="Create Flashcard / Question"
+                  >
+                    <Plus size={28} />
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -1328,10 +1333,10 @@ function App() {
                 </div>
 
                 <div className="study-toggle">
-                  <button className={`toggle-btn ${studyState.type === 'flashcards' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'flashcards', currentIndex: 0, activeHints: [] })}>
+                  <button className={`toggle-btn ${studyState.type === 'flashcards' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'flashcards', currentIndex: 0, activeHints: [], results: [], showResults: false })}>
                     Flashcards
                   </button>
-                  <button className={`toggle-btn ${studyState.type === 'qa' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'qa', currentIndex: 0, activeHints: [] })}>
+                  <button className={`toggle-btn ${studyState.type === 'qa' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'qa', currentIndex: 0, activeHints: [], results: [], showResults: false })}>
                     Open Questions (Audio)
                   </button>
                 </div>
@@ -1343,6 +1348,31 @@ function App() {
                         <BrainCircuit size={48} color="rgba(255,255,255,0.2)" style={{ marginBottom: '1rem' }} />
                         <h3>No Flashcards</h3>
                         <p>You haven't created any flashcards for this subject yet. Open a file to create them.</p>
+                      </div>
+                    ) : studyState.showResults ? (
+                      <div className="flashcard-summary" style={{ textAlign: 'center', width: '100%', maxWidth: '700px', background: 'var(--panel-bg)', padding: '3rem', borderRadius: '24px', border: '1px solid var(--panel-border)', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+                        <BrainCircuit size={64} color="var(--primary)" style={{ marginBottom: '1.5rem', display: 'inline-block' }} />
+                        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Session Complete!</h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '3rem' }}>You've reviewed {currentSubjectFlashcards.length} flashcards.</p>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                          <div style={{ background: 'rgba(239,68,68,0.1)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#ef4444' }}>{studyState.results?.filter(r => r === 'hard').length || 0}</div>
+                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontWeight: 600 }}>Hard</div>
+                          </div>
+                          <div style={{ background: 'rgba(245,158,11,0.1)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#f59e0b' }}>{studyState.results?.filter(r => r === 'good').length || 0}</div>
+                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontWeight: 600 }}>Unsure</div>
+                          </div>
+                          <div style={{ background: 'rgba(16,185,129,0.1)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#10b981' }}>{studyState.results?.filter(r => r === 'easy').length || 0}</div>
+                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontWeight: 600 }}>Easy</div>
+                          </div>
+                        </div>
+                        
+                        <button className="btn-save" onClick={() => setCurrentView('folder')} style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
+                          Back to Subject
+                        </button>
                       </div>
                     ) : (
                       <>
@@ -1393,9 +1423,9 @@ function App() {
 
                         {studyState.isFlipped && (
                           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flashcard-actions">
-                            <button className="btn-fc hard" onClick={handleNextFlashcard}>I didn't know</button>
-                            <button className="btn-fc good" onClick={handleNextFlashcard}>Unsure</button>
-                            <button className="btn-fc easy" onClick={handleNextFlashcard}>I knew</button>
+                            <button className="btn-fc hard" onClick={() => handleNextFlashcard('hard')}>I didn't know</button>
+                            <button className="btn-fc good" onClick={() => handleNextFlashcard('good')}>Unsure</button>
+                            <button className="btn-fc easy" onClick={() => handleNextFlashcard('easy')}>I knew</button>
                           </motion.div>
                         )}
                       </>
@@ -1471,9 +1501,14 @@ function App() {
                             </div>
 
                             {!studyState.feedback ? (
-                              <button className="btn-save" style={{ width: '100%', marginTop: '2rem', padding: '1rem' }} onClick={handleEvaluateAudio}>
-                                Evaluate Answer with AI
-                              </button>
+                              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                <button className="btn-skip" style={{ flex: 1, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} onClick={() => setStudyState({ ...studyState, transcript: '' })}>
+                                  <Mic size={18} /> Re-record
+                                </button>
+                                <button className="btn-save" style={{ flex: 2, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} onClick={handleEvaluateAudio}>
+                                  <BrainCircuit size={18} /> Check answer
+                                </button>
+                              </div>
                             ) : (
                               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                                 <div className="ai-feedback-box" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
