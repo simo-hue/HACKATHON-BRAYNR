@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Brain, 
-  Home, 
-  Target, 
-  BarChart2, 
-  Settings, 
+import {
+  Brain,
+  Home,
+  Target,
+  BarChart2,
+  Settings,
   LogOut,
   UploadCloud,
   FileText,
@@ -22,67 +22,165 @@ import {
   Calendar,
   Clock,
   Sparkles,
-  CalendarDays
+  CalendarDays,
+  Activity,
+  CheckCircle,
+  XCircle,
+  Flame,
+  BrainCircuit,
+  HelpCircle
 } from 'lucide-react';
 import './App.css';
 
 function App() {
   // Navigation & Hierarchy State
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal', 'statistiche', 'read_file'
   const [currentFolder, setCurrentFolder] = useState(null);
   const [newSubjectName, setNewSubjectName] = useState('');
   const [previousView, setPreviousView] = useState(null);
-  
+  const [currentFile, setCurrentFile] = useState(null);
+
   // Mock File System State
-  const [fileSystem, setFileSystem] = useState({
-    "Intelligenza Artificiale": [
-      { name: "Lezione 1 - Intro.pdf", type: "pdf", pages: 12, words: 2500, difficulty: 'semplice' },
-      { name: "Reti Neurali.docx", type: "doc", pages: 25, words: 6000, difficulty: 'difficile' }
-    ],
-    "Fisica Quantistica": [
-      { name: "Appunti Schrödinger.pdf", type: "pdf", pages: 8, words: 1800, difficulty: 'medio' }
-    ]
+  const [fileSystem, setFileSystem] = useState(() => {
+    const saved = localStorage.getItem('fileSystem');
+    return saved ? JSON.parse(saved) : {
+      "Intelligenza Artificiale": [
+        { name: "Lezione 1 - Intro.pdf", type: "pdf", pages: 12, words: 2500, difficulty: 'semplice' },
+        { name: "Reti Neurali.docx", type: "doc", pages: 25, words: 6000, difficulty: 'difficile' }
+      ],
+      "Fisica Quantistica": [
+        { name: "Appunti Schrödinger.pdf", type: "pdf", pages: 8, words: 1800, difficulty: 'medio' }
+      ],
+      "Storia Contemporanea": [],
+      "Basi di Dati": [],
+      "Diritto Privato": []
+    };
   });
 
   // Goals State
-  const [goals, setGoals] = useState({
-    "Intelligenza Artificiale": {
-      deadline: "2026-06-15",
-      dailyHours: 2,
-      daysOfWeek: ["Lun", "Mer", "Ven"],
-      progress: 35
-    },
-    "Storia Contemporanea": {
-      deadline: "2026-04-10",
-      dailyHours: 1,
-      daysOfWeek: ["Mar", "Gio"],
-      progress: 100
-    },
-    "Basi di Dati": {
-      deadline: "2026-04-20",
-      dailyHours: 3,
-      daysOfWeek: ["Lun", "Mer", "Ven"],
-      progress: 100
-    },
-    "Diritto Privato": {
-      deadline: "2026-05-01",
-      dailyHours: 2,
-      daysOfWeek: ["Sab", "Dom"],
-      progress: 100
-    }
+  const [goals, setGoals] = useState(() => {
+    const saved = localStorage.getItem('goals');
+    return saved ? JSON.parse(saved) : {
+      "Intelligenza Artificiale": {
+        deadline: "2026-06-15",
+        dailyHours: 2,
+        daysOfWeek: ["Lun", "Mer", "Ven"],
+        progress: 35
+      },
+      "Storia Contemporanea": {
+        deadline: "2026-04-10",
+        dailyHours: 1,
+        daysOfWeek: ["Mar", "Gio"],
+        progress: 100
+      },
+      "Basi di Dati": {
+        deadline: "2026-04-20",
+        dailyHours: 3,
+        daysOfWeek: ["Lun", "Mer", "Ven"],
+        progress: 100
+      },
+      "Diritto Privato": {
+        deadline: "2026-05-01",
+        dailyHours: 2,
+        daysOfWeek: ["Sab", "Dom"],
+        progress: 100
+      }
+    };
   });
+
+  // Stats & Adherence State
+  const [stats, setStats] = useState(() => {
+    const saved = localStorage.getItem('stats');
+    return saved ? JSON.parse(saved) : {
+      flashcards: { reviewCount: 342, retentionRate: 85, streakDays: 14 },
+      qa: { questionsAnswered: 89, averageScore: 78 },
+      adherence: {
+        completedDays: 20,
+        missedDays: 4,
+        history: [true, true, false, true, true, true, false, true, true, true, true, true, true, true]
+      },
+      lastCheckIn: null
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fileSystem', JSON.stringify(fileSystem));
+  }, [fileSystem]);
+
+  useEffect(() => {
+    localStorage.setItem('goals', JSON.stringify(goals));
+  }, [goals]);
+
+  useEffect(() => {
+    localStorage.setItem('stats', JSON.stringify(stats));
+  }, [stats]);
 
   const [tempGoal, setTempGoal] = useState({
     deadline: "",
     dailyHours: 2,
     daysOfWeek: []
   });
+  const [viewingGoal, setViewingGoal] = useState(null);
 
   const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
   // Upload State
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]);
+  const [checkedSubjects, setCheckedSubjects] = useState({});
+
+  // Check-in logic
+  const todayDateStr = new Date().toDateString();
+  const [needsCheckIn, setNeedsCheckIn] = useState(true);
+
+  const yesterday = new Date(Date.now() - 86400000);
+  const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const yesterdayDayName = dayNames[yesterday.getDay()];
+
+  const yesterdaySubjects = [];
+  Object.entries(goals).forEach(([subject, goalInfo]) => {
+    if (goalInfo.daysOfWeek.includes(yesterdayDayName)) {
+      yesterdaySubjects.push(subject);
+    }
+  });
+
+  const toggleCheckedSubject = (subject) => {
+    setCheckedSubjects(prev => ({
+      ...prev,
+      [subject]: !prev[subject]
+    }));
+  };
+
+  const submitCheckIn = () => {
+    const atLeastOneStudied = yesterdaySubjects.length > 0 
+      ? yesterdaySubjects.some(s => checkedSubjects[s])
+      : checkedSubjects['general'];
+    
+    handleCheckIn(atLeastOneStudied);
+  };
+
+  const handleCheckIn = (studied) => {
+    setNeedsCheckIn(false);
+    setStats(prev => {
+      const newHistory = [...prev.adherence.history, studied];
+      if (newHistory.length > 14) newHistory.shift();
+
+      return {
+        ...prev,
+        lastCheckIn: todayDateStr,
+        adherence: {
+          ...prev.adherence,
+          completedDays: studied ? prev.adherence.completedDays + 1 : prev.adherence.completedDays,
+          missedDays: !studied ? prev.adherence.missedDays + 1 : prev.adherence.missedDays,
+          history: newHistory
+        },
+        flashcards: {
+          ...prev.flashcards,
+          streakDays: studied ? prev.flashcards.streakDays + 1 : 0
+        }
+      };
+    });
+  };
 
   // Sidebar navigation handlers
   const navigateToHome = () => {
@@ -95,6 +193,12 @@ function App() {
 
   const navigateToObiettivi = () => {
     setCurrentView('obiettivi');
+    setCurrentFolder(null);
+    setPreviousView(null);
+  };
+
+  const navigateToStatistiche = () => {
+    setCurrentView('statistiche');
     setCurrentFolder(null);
     setPreviousView(null);
   };
@@ -123,15 +227,15 @@ function App() {
 
   const handleSaveUploadAndGoToGoals = () => {
     const targetFolder = currentView === 'upload_files' ? newSubjectName : currentFolder;
-    
+
     setFileSystem(prev => {
       const updated = { ...prev };
       if (!updated[targetFolder]) {
         updated[targetFolder] = [];
       }
-      
-      const formattedFiles = uploadFiles.map(f => ({ 
-        name: f.name, 
+
+      const formattedFiles = uploadFiles.map(f => ({
+        name: f.name,
         type: "pdf",
         difficulty: f.difficulty,
         pages: f.pages,
@@ -152,10 +256,10 @@ function App() {
     if (currentFolder) {
       setGoals(prev => ({
         ...prev,
-        [currentFolder]: { ...tempGoal }
+        [currentFolder]: { ...tempGoal, progress: prev[currentFolder]?.progress || 0 }
       }));
     }
-    
+
     if (previousView === 'obiettivi') {
       setCurrentView('obiettivi');
     } else {
@@ -178,11 +282,16 @@ function App() {
       const isSelected = prev.daysOfWeek.includes(day);
       return {
         ...prev,
-        daysOfWeek: isSelected 
+        daysOfWeek: isSelected
           ? prev.daysOfWeek.filter(d => d !== day)
           : [...prev.daysOfWeek, day]
       };
     });
+  };
+
+  const handleReadFile = (file) => {
+    setCurrentFile(file);
+    setCurrentView('read_file');
   };
 
   // Drag & Drop Handlers
@@ -229,13 +338,13 @@ function App() {
     <div className="app-container">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="brand" onClick={navigateToHome} style={{cursor: 'pointer'}}>
+        <div className="brand" onClick={navigateToHome} style={{ cursor: 'pointer' }}>
           <Brain className="brand-icon" />
           Braynr
         </div>
-        
+
         <nav className="nav-menu">
-          <a onClick={navigateToHome} className={`nav-item ${['home', 'folder'].includes(currentView) ? 'active' : ''}`}>
+          <a onClick={navigateToHome} className={`nav-item ${['home', 'folder', 'read_file'].includes(currentView) ? 'active' : ''}`}>
             <Home size={20} />
             <span>Home</span>
           </a>
@@ -247,7 +356,11 @@ function App() {
             <Target size={20} />
             <span>Obiettivi</span>
           </a>
-          <a className="nav-item">
+          <a onClick={() => setCurrentView('calendar')} className={`nav-item ${currentView === 'calendar' ? 'active' : ''}`}>
+            <Calendar size={20} />
+            <span>Calendario</span>
+          </a>
+          <a onClick={navigateToStatistiche} className={`nav-item ${currentView === 'statistiche' ? 'active' : ''}`}>
             <BarChart2 size={20} />
             <span>Statistiche</span>
           </a>
@@ -276,7 +389,7 @@ function App() {
               </>
             )}
             {currentView === 'folder' && (
-              <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button onClick={navigateToHome} className="btn-back">
                   <ArrowLeft size={20} />
                 </button>
@@ -294,10 +407,10 @@ function App() {
             )}
             {currentView === 'upload_files' && (
               <>
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
                   <span>Creazione materia</span>
                   <ChevronRight size={16} />
-                  <span style={{color: 'var(--text-main)'}}>{newSubjectName}</span>
+                  <span style={{ color: 'var(--text-main)' }}>{newSubjectName}</span>
                 </div>
                 <h1>Aggiungi le fonti</h1>
                 <p>Carica PDF, slide, appunti, audio o video per iniziare a studiare.</p>
@@ -306,31 +419,31 @@ function App() {
             {currentView === 'set_goals' && (
               <>
                 {previousView === 'obiettivi' ? (
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
                     <span>Obiettivi</span>
                     <ChevronRight size={16} />
-                    <span style={{color: 'var(--text-main)'}}>{currentFolder}</span>
+                    <span style={{ color: 'var(--text-main)' }}>{currentFolder}</span>
                   </div>
                 ) : (
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
                     <span>Creazione materia</span>
                     <ChevronRight size={16} />
                     <span>Upload Fonti</span>
                     <ChevronRight size={16} />
-                    <span style={{color: 'var(--text-main)'}}>Obiettivi</span>
+                    <span style={{ color: 'var(--text-main)' }}>Obiettivi</span>
                   </div>
                 )}
-                
+
                 <h1>{previousView === 'obiettivi' ? 'Modifica o Imposta Obiettivi' : 'Imposta Obiettivi di Studio'}</h1>
                 <p>Pianifica lo studio per <strong>{currentFolder}</strong>.</p>
               </>
             )}
             {currentView === 'select_subject_for_goal' && (
               <>
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600}}>
-                  <span style={{cursor: 'pointer'}} onClick={navigateToObiettivi}>Obiettivi</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
+                  <span style={{ cursor: 'pointer' }} onClick={navigateToObiettivi}>Obiettivi</span>
                   <ChevronRight size={16} />
-                  <span style={{color: 'var(--text-main)'}}>Seleziona Materia</span>
+                  <span style={{ color: 'var(--text-main)' }}>Seleziona Materia</span>
                 </div>
                 <h1>Aggiungi un nuovo Obiettivo</h1>
                 <p>Per quale materia vuoi configurare il piano di studio?</p>
@@ -342,6 +455,12 @@ function App() {
                 <p>Gestisci le tue scadenze e ritmi di studio per ogni materia.</p>
               </>
             )}
+            {currentView === 'statistiche' && (
+              <>
+                <h1>Statistiche e Progressi</h1>
+                <p>Monitora i tuoi risultati e la costanza nello studio.</p>
+              </>
+            )}
           </div>
 
           <div className="profile-section">
@@ -349,17 +468,49 @@ function App() {
               <Bell size={24} />
               <span className="badge-dot"></span>
             </button>
-            <img 
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" 
-              alt="Profilo Utente" 
+            <img
+              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
+              alt="Profilo Utente"
               className="user-avatar"
             />
           </div>
         </header>
 
         <div className="content-area">
+          {needsCheckIn && (
+            <div className="modal-overlay">
+              <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}>
+                <div className="modal-header">
+                  <Activity size={32} color="var(--primary)" />
+                  <h3>Check-in Giornaliero</h3>
+                </div>
+                <div className="modal-body">
+                  <p>Quali materie sei riuscito a studiare ieri?</p>
+                  <div className="checkin-subjects-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', margin: '1.5rem 0' }}>
+                    {yesterdaySubjects.length > 0 ? (
+                      yesterdaySubjects.map(subject => (
+                        <label key={subject} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', background: 'rgba(255,255,255,0.02)' }}>
+                          <input type="checkbox" checked={checkedSubjects[subject] || false} onChange={() => toggleCheckedSubject(subject)} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                          <span style={{ fontSize: '1rem' }}>{subject}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', background: 'rgba(255,255,255,0.02)' }}>
+                        <input type="checkbox" checked={checkedSubjects['general'] || false} onChange={() => toggleCheckedSubject('general')} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                        <span style={{ fontSize: '1rem' }}>Ho studiato comunque extra-piano</span>
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button onClick={() => { handleCheckIn(false); }} className="btn-checkin no"><XCircle size={18} /> Non ho studiato affatto</button>
+                  <button onClick={submitCheckIn} className="btn-checkin yes"><CheckCircle size={18} /> Salva Risposte</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
           <AnimatePresence mode="wait">
-            
+
             {/* VIEW: HOME (Folders) */}
             {currentView === 'home' && (
               <motion.div key="home" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="grid-container">
@@ -372,7 +523,7 @@ function App() {
                     <p>{fileSystem[folderName].length} risorse</p>
                   </motion.div>
                 ))}
-                
+
                 <motion.div className="folder-card add-card" whileHover={{ y: -5, scale: 1.02 }} onClick={handleStartCreate}>
                   <div className="add-icon-bg">
                     <Plus size={36} />
@@ -393,30 +544,111 @@ function App() {
                       </div>
                       <div className="file-info">
                         <h4>{file.name}</h4>
-                        <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
-                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} pag. • {file.words || 3000} parole</span>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{file.pages || 15} pag. • {file.words || 3000} parole</span>
                           <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>
                             {file.difficulty || 'medio'}
                           </span>
                         </div>
                       </div>
-                      <button className="btn-study">Studia</button>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn-read" onClick={() => handleReadFile(file)}>Info</button>
+                        <button className="btn-study">Studia</button>
+                      </div>
                     </motion.div>
                   ))}
-                  
+
                   {fileSystem[currentFolder]?.length === 0 && (
                     <div className="empty-state">
                       Nessun file presente in questa materia.
                     </div>
                   )}
 
-                  <motion.div 
+                  <motion.div
                     className="file-card add-file-card"
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (fileSystem[currentFolder]?.length || 0) * 0.05 }}
                     onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
                   >
                     <Plus size={24} /> Aggiungi altre risorse
                   </motion.div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* VIEW: READ FILE */}
+            {currentView === 'read_file' && (
+              <motion.div key="read_file" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="reader-container">
+                <div className="reader-header">
+                  <button onClick={() => setCurrentView('folder')} className="btn-back" style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ArrowLeft size={20} />
+                  </button>
+                  <h2 style={{ margin: 0 }}>{currentFile?.name}</h2>
+                </div>
+                <div className="reader-content">
+                  <h3>Introduzione</h3>
+                  <p>Questo è il contenuto del file <strong>{currentFile?.name}</strong>. In un'applicazione reale, qui verrebbe renderizzato il PDF o il documento selezionato.</p>
+                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+                  <h3>Concetti Chiave</h3>
+                  <p>1. **Analisi del Testo**: L'IA ha estratto le parole chiave e i concetti fondamentali per generare flashcard e mappe mentali.</p>
+                  <p>2. **Difficoltà**: Questo file è stato classificato come <strong>{currentFile?.difficulty || 'medio'}</strong>, il che influisce sulla stima del tempo di studio.</p>
+                  <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* VIEW: CALENDAR */}
+            {currentView === 'calendar' && (
+              <motion.div key="calendar" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="calendar-view-container">
+                <div className="calendar-header">
+                  <h2>Maggio 2026</h2>
+                  <div className="calendar-nav">
+                    <button className="btn-nav">Oggi</button>
+                    <button className="btn-nav">&lt;</button>
+                    <button className="btn-nav">&gt;</button>
+                  </div>
+                </div>
+                
+                <div className="calendar-grid-header">
+                  {["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"].map(d => <div key={d} className="weekday-label">{d}</div>)}
+                </div>
+                
+                <div className="calendar-grid">
+                  {[
+                    null, null, null, null, 1, 2, 3,
+                    4, 5, 6, 7, 8, 9, 10,
+                    11, 12, 13, 14, 15, 16, 17,
+                    18, 19, 20, 21, 22, 23, 24,
+                    25, 26, 27, 28, 29, 30, 31,
+                    null, null, null, null
+                  ].map((day, idx) => {
+                    const dayName = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"][idx % 7];
+                    const activeSessions = [];
+                    
+                    if (day) {
+                      Object.entries(goals).forEach(([subject, goalInfo]) => {
+                        if (goalInfo.daysOfWeek.includes(dayName)) {
+                          activeSessions.push({ subject, hours: goalInfo.dailyHours, progress: goalInfo.progress });
+                        }
+                      });
+                    }
+                    
+                    return (
+                      <div key={idx} className={`calendar-cell ${day ? '' : 'empty'} ${day === 9 ? 'today' : ''}`}>
+                        {day && <span className="day-number">{day}</span>}
+                        <div className="sessions-list">
+                          {activeSessions.map((session, sIdx) => (
+                            <div key={sIdx} className={`session-tag ${session.progress === 100 ? 'completed' : ''}`} style={{
+                              background: session.progress === 100 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.15)',
+                              borderLeft: `3px solid ${session.progress === 100 ? 'var(--success)' : 'var(--primary)'}`
+                            }}>
+                              <span className="session-subject">{session.subject}</span>
+                              <span className="session-hours">{session.hours}h</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -430,7 +662,7 @@ function App() {
                   </div>
                   <h2>Come vuoi chiamare la materia?</h2>
                   <input type="text" autoFocus placeholder="Es. Analisi Matematica 2, Diritto Privato..." value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} className="input-subject" />
-                  <button type="submit" className="btn-upload" disabled={!newSubjectName.trim()} style={{width: '100%', justifyContent: 'center'}}>
+                  <button type="submit" className="btn-upload" disabled={!newSubjectName.trim()} style={{ width: '100%', justifyContent: 'center' }}>
                     Avanti <ChevronRight size={20} />
                   </button>
                 </form>
@@ -441,14 +673,13 @@ function App() {
             {currentView === 'upload_files' && (
               <motion.div key="upload_files" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="upload-container">
                 <div className={`upload-zone ${isDragActive ? 'drag-active' : ''}`} onDragEnter={onDragEnter} onDragLeave={onDragLeave} onDragOver={onDragOver} onDrop={onDrop}>
-
                   <div className="upload-icon-wrapper" style={{ transform: isDragActive ? 'scale(1.1)' : 'scale(1)', transition: '0.2s' }}>
                     <UploadCloud size={40} />
                   </div>
-                  
+
                   <h2>{isDragActive ? 'Rilascia i file qui...' : 'Trascina e rilascia i tuoi file'}</h2>
                   <p>Aggiungi risorse a <strong>{newSubjectName || currentFolder}</strong>. Supportiamo PDF, Word, PPT, immagini, audio e video.</p>
-                  
+
                   <input type="file" id="file-upload" style={{ display: 'none' }} multiple onChange={handleFileInput} />
                   <label htmlFor="file-upload" className="btn-upload">Seleziona dal computer</label>
 
@@ -458,18 +689,18 @@ function App() {
                         <h3 className="preview-title"><CheckCircle2 size={18} color="#10b981" /> File pronti per l'analisi</h3>
                         <div className="preview-list">
                           {uploadFiles.map((file, idx) => (
-                            <div key={idx} className="preview-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                            <div key={idx} className="preview-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <FileIcon size={20} color="#a5b4fc" />
                                 <div>
-                                  <span style={{display: 'block', fontWeight: 500}}>{file.name}</span>
-                                  <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{file.pages} pag. • {file.words} parole</span>
+                                  <span style={{ display: 'block', fontWeight: 500 }}>{file.name}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{file.pages} pag. • {file.words} parole</span>
                                 </div>
                               </div>
                               <div className="difficulty-selector">
                                 {['semplice', 'medio', 'difficile'].map(level => (
-                                  <button 
-                                    key={level} 
+                                  <button
+                                    key={level}
                                     className={`diff-btn ${file.difficulty === level ? 'active' : ''} ${level}`}
                                     onClick={() => setFileDifficulty(idx, level)}
                                   >
@@ -493,30 +724,30 @@ function App() {
             {/* VIEW: SELECT SUBJECT FOR GOAL */}
             {currentView === 'select_subject_for_goal' && (
               <motion.div key="select_subject_for_goal" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="center-container">
-                <div className="create-subject-form" style={{padding: '3rem'}}>
+                <div className="create-subject-form" style={{ padding: '3rem' }}>
                   <h2>Seleziona la materia</h2>
-                  
+
                   <div className="subjects-list">
                     {Object.keys(fileSystem).length === 0 && (
-                       <p style={{color: 'var(--text-muted)'}}>Non hai ancora creato nessuna materia.</p>
+                      <p style={{ color: 'var(--text-muted)' }}>Non hai ancora creato nessuna materia.</p>
                     )}
                     {Object.keys(fileSystem).map(subject => (
-                       <button 
-                         key={subject} 
-                         className="btn-subject-select"
-                         onClick={() => {
-                           setCurrentFolder(subject);
-                           setTempGoal(goals[subject] || { deadline: "", dailyHours: 2, daysOfWeek: [] });
-                           setPreviousView('obiettivi');
-                           setCurrentView('set_goals');
-                         }}
-                       >
-                         <Folder size={20} color="#8b5cf6" /> {subject}
-                       </button>
+                      <button
+                        key={subject}
+                        className="btn-subject-select"
+                        onClick={() => {
+                          setCurrentFolder(subject);
+                          setTempGoal(goals[subject] || { deadline: "", dailyHours: 2, daysOfWeek: [] });
+                          setPreviousView('obiettivi');
+                          setCurrentView('set_goals');
+                        }}
+                      >
+                        <Folder size={20} color="#8b5cf6" /> {subject}
+                      </button>
                     ))}
                   </div>
 
-                  <button className="btn-skip" style={{marginTop: '2rem'}} onClick={navigateToObiettivi}>
+                  <button className="btn-skip" style={{ marginTop: '2rem' }} onClick={navigateToObiettivi}>
                     Annulla
                   </button>
                 </div>
@@ -529,20 +760,20 @@ function App() {
                 <div className="goals-layout">
                   <div className="goals-form">
                     <div className="form-group">
-                      <label><Calendar size={18}/> Entro quando vuoi completare lo studio?</label>
-                      <input type="date" className="input-date" value={tempGoal.deadline} onChange={(e) => setTempGoal({...tempGoal, deadline: e.target.value})} />
+                      <label><Calendar size={18} /> Entro quando vuoi completare lo studio?</label>
+                      <input type="date" className="input-date" value={tempGoal.deadline} onChange={(e) => setTempGoal({ ...tempGoal, deadline: e.target.value })} />
                     </div>
-                    
+
                     <div className="form-group">
-                      <label><Clock size={18}/> Ore di studio giornaliere (stimate)</label>
-                      <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                        <input type="range" min="1" max="12" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({...tempGoal, dailyHours: parseInt(e.target.value)})} className="range-slider" />
+                      <label><Clock size={18} /> Ore di studio giornaliere (stimate)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <input type="range" min="1" max="12" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({ ...tempGoal, dailyHours: parseInt(e.target.value) })} className="range-slider" />
                         <span className="hours-display">{tempGoal.dailyHours} ore</span>
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label><CalendarDays size={18}/> In quali giorni vuoi studiare?</label>
+                      <label><CalendarDays size={18} /> In quali giorni vuoi studiare?</label>
                       <div className="days-picker">
                         {DAYS.map(day => (
                           <button key={day} type="button" onClick={() => toggleDay(day)} className={`day-btn ${tempGoal.daysOfWeek.includes(day) ? 'active' : ''}`}>
@@ -570,17 +801,17 @@ function App() {
                         <>
                           <p>In base ai materiali analizzati ({fileSystem[currentFolder]?.length || 0} file) e ai tuoi <strong>{Object.values(goals).filter(g => g.progress === 100).length} progetti precedenti</strong>, calcoliamo che siano necessarie circa <strong>14 ore</strong> di studio attivo per un apprendimento profondo.</p>
                           {tempGoal.daysOfWeek.length > 0 ? (
-                            <p style={{marginTop: '1rem', color: 'var(--text-muted)'}}>
+                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
                               Studiando <strong>{tempGoal.dailyHours} ore</strong> per <strong>{tempGoal.daysOfWeek.length} giorni</strong> a settimana, completerai la materia in circa <strong>{Math.ceil(14 / (tempGoal.dailyHours * tempGoal.daysOfWeek.length))} settimane</strong>.
                             </p>
                           ) : (
-                            <p style={{marginTop: '1rem', color: 'var(--text-muted)'}}>Seleziona i giorni di studio per avere una stima di completamento più precisa.</p>
+                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Seleziona i giorni di studio per avere una stima di completamento più precisa.</p>
                           )}
                         </>
                       ) : (
-                        <p style={{color: 'var(--text-muted)'}}>
+                        <p style={{ color: 'var(--text-muted)' }}>
                           L'algoritmo di stima IA si attiverà dopo che avrai completato almeno <strong>3 progetti</strong>. Questo ci permette di offrirti una stima personalizzata e coerente con i tuoi ritmi.
-                          <br/><br/>
+                          <br /><br />
                           Attualmente hai completato <strong>{Object.values(goals).filter(g => g.progress === 100).length}</strong> progetti.
                         </p>
                       )}
@@ -595,19 +826,19 @@ function App() {
               <motion.div key="obiettivi" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
                 <div className="grid-container">
                   {Object.keys(goals).length === 0 && (
-                    <div className="empty-state" style={{gridColumn: '1 / -1'}}>
-                      <Target size={48} color="rgba(255,255,255,0.2)" style={{marginBottom: '1rem'}} />
+                    <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                      <Target size={48} color="rgba(255,255,255,0.2)" style={{ marginBottom: '1rem' }} />
                       <h3>Nessun obiettivo impostato</h3>
                       <p>Crea un nuovo obiettivo o impostane uno dopo aver caricato le fonti.</p>
                     </div>
                   )}
 
                   {Object.entries(goals).map(([subject, goalInfo]) => (
-                    <div key={subject} className="goal-card">
+                    <div key={subject} className="goal-card" onClick={() => setViewingGoal(subject)}>
                       <div className="goal-header">
                         <Target size={24} color="var(--primary)" />
                         <h3>{subject}</h3>
-                        {goalInfo.progress === 100 && <span className="badge-completed" style={{background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto'}}>Completato</span>}
+                        {goalInfo.progress === 100 && <span className="badge-completed" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto' }}>Completato</span>}
                       </div>
                       <div className="goal-detail">
                         <Calendar size={16} />
@@ -622,15 +853,15 @@ function App() {
                         <span>{goalInfo.daysOfWeek.length > 0 ? goalInfo.daysOfWeek.join(', ') : 'Nessun giorno'}</span>
                       </div>
                       <div className="progress-bar-bg">
-                        <div className="progress-bar-fill" style={{width: `${goalInfo.progress || 0}%`, background: goalInfo.progress === 100 ? 'var(--success)' : 'var(--primary)'}}></div>
+                        <div className="progress-bar-fill" style={{ width: `${goalInfo.progress || 0}%`, background: goalInfo.progress === 100 ? 'var(--success)' : 'var(--primary)' }}></div>
                       </div>
-                      <span style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>{goalInfo.progress || 0}% completato</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>{goalInfo.progress || 0}% completato</span>
                     </div>
                   ))}
 
-                  <motion.div 
-                    className="folder-card add-card" 
-                    whileHover={{ y: -5, scale: 1.02 }} 
+                  <motion.div
+                    className="folder-card add-card"
+                    whileHover={{ y: -5, scale: 1.02 }}
                     onClick={() => setCurrentView('select_subject_for_goal')}
                   >
                     <div className="add-icon-bg">
@@ -640,6 +871,89 @@ function App() {
                   </motion.div>
 
                 </div>
+
+                {viewingGoal && (
+                  <div className="modal-overlay" onClick={() => setViewingGoal(null)}>
+                    <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} onClick={(e) => e.stopPropagation()}>
+                      <div className="modal-header">
+                        <Target size={32} color="var(--primary)" />
+                        <h3>{viewingGoal}</h3>
+                        {goals[viewingGoal].progress === 100 && <span className="badge-completed" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, marginLeft: 'auto' }}>Completato</span>}
+                      </div>
+                      <div className="modal-body">
+                        <div className="goal-detail" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Calendar size={18} />
+                          <span><strong>Deadline:</strong> {goals[viewingGoal].deadline ? new Date(goals[viewingGoal].deadline).toLocaleDateString('it-IT') : 'Non impostata'}</span>
+                        </div>
+                        <div className="goal-detail" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Clock size={18} />
+                          <span><strong>Ritmo:</strong> {goals[viewingGoal].dailyHours} ore al giorno</span>
+                        </div>
+                        <div className="goal-detail" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <CalendarDays size={18} />
+                          <span><strong>Giorni:</strong> {goals[viewingGoal].daysOfWeek.length > 0 ? goals[viewingGoal].daysOfWeek.join(', ') : 'Nessun giorno'}</span>
+                        </div>
+                        <div style={{ marginTop: '1.5rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span>Progresso</span>
+                            <span>{goals[viewingGoal].progress || 0}%</span>
+                          </div>
+                          <div className="progress-bar-bg">
+                            <div className="progress-bar-fill" style={{ width: `${goals[viewingGoal].progress || 0}%`, background: goals[viewingGoal].progress === 100 ? 'var(--success)' : 'var(--primary)' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="modal-footer" style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button onClick={() => setViewingGoal(null)} className="btn-skip" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}>Chiudi</button>
+                        <button onClick={() => {
+                          setCurrentFolder(viewingGoal);
+                          setTempGoal(goals[viewingGoal]);
+                          setPreviousView('obiettivi');
+                          setCurrentView('set_goals');
+                          setViewingGoal(null);
+                        }} className="btn-save" style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none' }}>Modifica</button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* VIEW: STATISTICHE */}
+            {currentView === 'statistiche' && (
+              <motion.div key="statistiche" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
+
+
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-header"><Flame color="#f97316" /> <h3>Streak Giornaliero</h3></div>
+                    <div className="stat-value">{stats.flashcards.streakDays} <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Giorni</span></div>
+                    <p>Studi consecutivi completati.</p>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-header"><BrainCircuit color="#3b82f6" /> <h3>Ritenzione Flashcard</h3></div>
+                    <div className="stat-value">{stats.flashcards.retentionRate}%</div>
+                    <p>Su {stats.flashcards.reviewCount} revisioni totali.</p>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-header"><HelpCircle color="#10b981" /> <h3>Valutazione Q&A</h3></div>
+                    <div className="stat-value">{stats.qa.averageScore}<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/100</span></div>
+                    <p>Media su {stats.qa.questionsAnswered} risposte date.</p>
+                  </div>
+                </div>
+
+                <div className="stat-card wide">
+                  <div className="stat-header"><Activity color="#8b5cf6" /> <h3>Coerenza al Piano di Studio</h3></div>
+                  <p style={{ marginBottom: '1.5rem' }}>
+                    Le tue ultime due settimane. Hai un tasso di aderenza del <strong>{Math.round((stats.adherence.completedDays / Math.max(1, (stats.adherence.completedDays + stats.adherence.missedDays))) * 100)}%</strong>.
+                  </p>
+                  <div className="adherence-graph">
+                    {stats.adherence.history.map((studied, i) => (
+                      <div key={i} className={`adherence-day ${studied ? 'studied' : 'missed'}`} title={studied ? "Studiato" : "Saltato"}></div>
+                    ))}
+                  </div>
+                </div>
+
               </motion.div>
             )}
 
