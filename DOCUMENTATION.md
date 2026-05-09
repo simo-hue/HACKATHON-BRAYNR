@@ -187,3 +187,11 @@
 - [2026-05-09/22:46]: Modal Centering Fix
   - *Details*: Fixed a layout bug where the question creation modal was not perfectly centered relative to the entire screen. The modal was previously offset to the right because it was placed inside an animated container that established a new CSS containing block.
   - *Tech Notes*: Moved the `createQuestionState.isOpen` modal render block in `App.jsx` out of the `<AnimatePresence>` component and placed it directly inside the `<main>` tag, ensuring that its `position: fixed` behaves relative to the viewport.
+
+- [2026-05-09/22:52]: Flashcard Session Summary Screen
+  - *Details*: Enhanced the flashcard study experience by introducing a summary screen at the end of a study session. Instead of abruptly returning to the folder view, the user now sees a visually appealing summary containing the total number of cards reviewed, along with a breakdown of their answers ('Hard', 'Unsure', 'Easy') categorized by color.
+  - *Tech Notes*: Updated `studyState` to track a `results` array and a `showResults` boolean flag. Modified `handleNextFlashcard` to accept the answer type and update the state accordingly. Added a conditional rendering block in `App.jsx` to display the  UI when all flashcards in the set are completed.
+
+- [2026-05-09/22:52]: Flashcard Session Summary Screen
+  - *Details*: Enhanced the flashcard study experience by introducing a summary screen at the end of a study session. Instead of abruptly returning to the folder view, the user now sees a visually appealing summary containing the total number of cards reviewed, along with a breakdown of their answers ('Hard', 'Unsure', 'Easy') categorized by color.
+  - *Tech Notes*: Updated `studyState` to track a `results` array and a `showResults` boolean flag. Modified `handleNextFlashcard` to accept the answer type and update the state accordingly. Added a conditional rendering block in `App.jsx` to display the `.flashcard-summary` UI when all flashcards in the set are completed.
