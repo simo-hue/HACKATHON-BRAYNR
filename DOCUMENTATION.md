@@ -167,3 +167,11 @@
 - [2026-05-09/22:35]: Fix Calendar Empty Issue
   - *Details*: Fixed an issue where the calendar appeared empty after translation because it was looking for English day names while existing data in `localStorage` used Italian names.
   - *Tech Notes*: Modified `App.jsx`. Updated `DAYS` and `dayNames` to English, but added fallback checks for Italian day names in both the calendar loop and check-in logic to support legacy data.
+
+- [2026-05-09/22:40]: Calendar Deadline Integration
+  - *Details*: Made the calendar study plan coherent with the goal deadline. Sessions are now only displayed on the calendar up to the specified deadline date.
+  - *Tech Notes*: Modified `App.jsx`. Added a date comparison check in the calendar grid loop to compare the cell date with the goal's `deadline` string.
+
+- [2026-05-09/22:35]: Keywords/Hints for Question Answering
+  - *Details*: Added the ability to define keywords or hints during the creation of flashcards and open questions. During the study phase, users can click to reveal these hints if they are having difficulty answering.
+  - *Tech Notes*: Modified `App.jsx` to extend `createQuestionState` and `studyState` to include hints management. Added input field and badges for hints in the creation modal. In the study modes (flashcards and QA), added a hints section that conditionally renders and unmasks individual hints when clicked by the user, updating `activeHints` state.

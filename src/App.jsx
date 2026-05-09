@@ -302,7 +302,8 @@ function App() {
     transcript: '',
     feedback: null,
     isProcessing: false,
-    score: null
+    score: null,
+    activeHints: []
   });
 
   const [subjectQuestions, setSubjectQuestions] = useState(() => {
@@ -318,8 +319,28 @@ function App() {
     isOpen: false,
     type: 'flashcards',
     q: '',
-    a: ''
+    a: '',
+    hints: [],
+    newHint: ''
   });
+
+  const handleAddHint = (e) => {
+    e.preventDefault();
+    if (createQuestionState.newHint.trim()) {
+      setCreateQuestionState(prev => ({
+        ...prev,
+        hints: [...(prev.hints || []), prev.newHint.trim()],
+        newHint: ''
+      }));
+    }
+  };
+
+  const handleRemoveHint = (index) => {
+    setCreateQuestionState(prev => ({
+      ...prev,
+      hints: prev.hints.filter((_, i) => i !== index)
+    }));
+  };
 
   // Check-in logic
   const todayDateStr = new Date().toDateString();
@@ -492,7 +513,7 @@ function App() {
 
   const handleNextFlashcard = () => {
     if (studyState.currentIndex < currentSubjectFlashcards.length - 1) {
-      setStudyState({ ...studyState, currentIndex: studyState.currentIndex + 1, isFlipped: false });
+      setStudyState({ ...studyState, currentIndex: studyState.currentIndex + 1, isFlipped: false, activeHints: [] });
     } else {
       setCurrentView('folder'); // Or show completion screen
     }
@@ -500,7 +521,7 @@ function App() {
 
   const handleNextQA = () => {
     if (studyState.currentIndex < currentSubjectQA.length - 1) {
-      setStudyState({ ...studyState, currentIndex: studyState.currentIndex + 1, transcript: '', feedback: null, score: null, isRecording: false });
+      setStudyState({ ...studyState, currentIndex: studyState.currentIndex + 1, transcript: '', feedback: null, score: null, isRecording: false, activeHints: [] });
     } else {
       setCurrentView('folder');
     }
@@ -517,14 +538,14 @@ function App() {
         updated[subject] = { flashcards: [], qa: [] };
       }
       if (createQuestionState.type === 'flashcards') {
-        updated[subject].flashcards.push({ q: createQuestionState.q, a: createQuestionState.a });
+        updated[subject].flashcards.push({ q: createQuestionState.q, a: createQuestionState.a, hints: createQuestionState.hints || [] });
       } else {
-        updated[subject].qa.push({ q: createQuestionState.q });
+        updated[subject].qa.push({ q: createQuestionState.q, hints: createQuestionState.hints || [] });
       }
       return updated;
     });
 
-    setCreateQuestionState({ isOpen: false, type: 'flashcards', q: '', a: '' });
+    setCreateQuestionState({ isOpen: false, type: 'flashcards', q: '', a: '', hints: [], newHint: '' });
   };
 
   // Sidebar navigation handlers
@@ -668,7 +689,7 @@ function App() {
 
   const handleStudyFile = (file) => {
     setCurrentFile(file);
-    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null });
+    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null, activeHints: [] });
     setCurrentView('study_mode');
   };
 
@@ -676,7 +697,7 @@ function App() {
     e.stopPropagation();
     setCurrentSubFolder(folderItem.name);
     setCurrentFile({ name: folderItem.name });
-    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null });
+    setStudyState({ type: 'flashcards', currentIndex: 0, isFlipped: false, isRecording: false, transcript: '', feedback: null, isProcessing: false, score: null, activeHints: [] });
     setCurrentView('study_mode');
   };
 
@@ -1089,6 +1110,23 @@ function App() {
                               <textarea className="input-subject" style={{ minHeight: '80px', marginBottom: 0, fontSize: '1rem' }} placeholder="Enter the answer..." value={createQuestionState.a} onChange={e => setCreateQuestionState({ ...createQuestionState, a: e.target.value })} required />
                             </div>
                           )}
+                          <div className="form-group" style={{ marginBottom: '1rem' }}>
+                            <label style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Hints / Keywords (Optional)</label>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                              <input type="text" className="input-subject" style={{ marginBottom: 0 }} placeholder="Add a hint..." value={createQuestionState.newHint || ''} onChange={e => setCreateQuestionState({ ...createQuestionState, newHint: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddHint(e); } }} />
+                              <button type="button" className="btn-save" onClick={handleAddHint} style={{ padding: '0.5rem 1rem' }}>Add</button>
+                            </div>
+                            {createQuestionState.hints && createQuestionState.hints.length > 0 && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {createQuestionState.hints.map((hint, idx) => (
+                                  <span key={idx} style={{ backgroundColor: 'var(--surface)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)' }}>
+                                    {hint}
+                                    <XCircle size={14} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => handleRemoveHint(idx)} />
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <div className="modal-footer" style={{ marginTop: '2rem' }}>
                             <button type="button" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })} className="btn-skip">Cancel</button>
                             <button type="submit" className="btn-save">Save</button>
@@ -1116,10 +1154,10 @@ function App() {
                 </div>
 
                 <div className="study-toggle">
-                  <button className={`toggle-btn ${studyState.type === 'flashcards' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'flashcards', currentIndex: 0 })}>
+                  <button className={`toggle-btn ${studyState.type === 'flashcards' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'flashcards', currentIndex: 0, activeHints: [] })}>
                     Flashcards
                   </button>
-                  <button className={`toggle-btn ${studyState.type === 'qa' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'qa', currentIndex: 0 })}>
+                  <button className={`toggle-btn ${studyState.type === 'qa' ? 'active' : ''}`} onClick={() => setStudyState({ ...studyState, type: 'qa', currentIndex: 0, activeHints: [] })}>
                     Open Questions (Audio)
                   </button>
                 </div>
@@ -1140,6 +1178,36 @@ function App() {
                             <div className="flashcard-front">
                               <span className="flashcard-label">Question</span>
                               <p className="flashcard-text">{currentSubjectFlashcards[studyState.currentIndex]?.q}</p>
+                              
+                              {currentSubjectFlashcards[studyState.currentIndex]?.hints && currentSubjectFlashcards[studyState.currentIndex].hints.length > 0 && (
+                                <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                  {currentSubjectFlashcards[studyState.currentIndex].hints.map((hint, idx) => (
+                                    <span key={idx} 
+                                      onClick={() => {
+                                        if (!studyState.activeHints?.includes(idx)) {
+                                          setStudyState(prev => ({ ...prev, activeHints: [...(prev.activeHints || []), idx] }));
+                                        }
+                                      }}
+                                      style={{ 
+                                        backgroundColor: studyState.activeHints?.includes(idx) ? 'var(--primary)' : 'var(--surface)', 
+                                        color: studyState.activeHints?.includes(idx) ? 'white' : 'var(--text-muted)',
+                                        padding: '0.5rem 1rem', 
+                                        borderRadius: '2rem', 
+                                        fontSize: '0.875rem', 
+                                        cursor: studyState.activeHints?.includes(idx) ? 'default' : 'pointer',
+                                        border: '1px solid var(--border)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        transition: 'all 0.2s'
+                                      }}>
+                                      <Zap size={14} style={{ color: studyState.activeHints?.includes(idx) ? '#fef08a' : 'inherit' }} />
+                                      {studyState.activeHints?.includes(idx) ? hint : 'Hint ' + (idx + 1)}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
                               <span style={{ position: 'absolute', bottom: '1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}><RefreshCw size={14} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} /> Click to flip</span>
                             </div>
                             <div className="flashcard-back">
@@ -1174,6 +1242,35 @@ function App() {
                         <span style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Question {studyState.currentIndex + 1} of {currentSubjectQA.length}</span>
                         <div className="qa-question-box">
                           <p className="flashcard-text" style={{ margin: 0 }}>{currentSubjectQA[studyState.currentIndex]?.q}</p>
+                          
+                          {currentSubjectQA[studyState.currentIndex]?.hints && currentSubjectQA[studyState.currentIndex].hints.length > 0 && (
+                            <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+                              {currentSubjectQA[studyState.currentIndex].hints.map((hint, idx) => (
+                                <span key={idx} 
+                                  onClick={() => {
+                                    if (!studyState.activeHints?.includes(idx)) {
+                                      setStudyState(prev => ({ ...prev, activeHints: [...(prev.activeHints || []), idx] }));
+                                    }
+                                  }}
+                                  style={{ 
+                                    backgroundColor: studyState.activeHints?.includes(idx) ? 'var(--primary)' : 'var(--surface)', 
+                                    color: studyState.activeHints?.includes(idx) ? 'white' : 'var(--text-muted)',
+                                    padding: '0.5rem 1rem', 
+                                    borderRadius: '2rem', 
+                                    fontSize: '0.875rem', 
+                                    cursor: studyState.activeHints?.includes(idx) ? 'default' : 'pointer',
+                                    border: '1px solid var(--border)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    transition: 'all 0.2s'
+                                  }}>
+                                  <Zap size={14} style={{ color: studyState.activeHints?.includes(idx) ? '#fef08a' : 'inherit' }} />
+                                  {studyState.activeHints?.includes(idx) ? hint : 'Hint ' + (idx + 1)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         {!studyState.transcript && !studyState.isProcessing && (
@@ -1270,8 +1367,16 @@ function App() {
                     const activeSessions = [];
 
                     if (day) {
+                      const year = calendarDate.getFullYear();
+                      const month = String(calendarDate.getMonth() + 1).padStart(2, '0');
+                      const dayStr = String(day).padStart(2, '0');
+                      const cellDateStr = `${year}-${month}-${dayStr}`;
+
                       Object.entries(goals).forEach(([subject, goalInfo]) => {
-                        if (goalInfo.daysOfWeek.includes(dayNameEn) || goalInfo.daysOfWeek.includes(dayNameIt)) {
+                        const matchesDay = goalInfo.daysOfWeek.includes(dayNameEn) || goalInfo.daysOfWeek.includes(dayNameIt);
+                        const isBeforeDeadline = !goalInfo.deadline || cellDateStr <= goalInfo.deadline;
+
+                        if (matchesDay && isBeforeDeadline) {
                           activeSessions.push({ subject, hours: goalInfo.dailyHours, progress: goalInfo.progress });
                         }
                       });
