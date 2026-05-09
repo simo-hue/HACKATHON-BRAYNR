@@ -787,6 +787,8 @@
 .diff-btn.active.semplice { background: rgba(16, 185, 129, 0.2); color: #10b981; }
 .diff-btn.active.medio { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
 .diff-btn.active.difficile { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.diff-btn.active.notes { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.diff-btn.active.documentation { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
 
 /* Difficulty Badge in File Card */
 .difficulty-badge {
@@ -800,6 +802,8 @@
 .difficulty-badge.semplice { background: rgba(16, 185, 129, 0.1); color: #10b981; }
 .difficulty-badge.medio { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 .difficulty-badge.difficile { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.difficulty-badge.notes { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.difficulty-badge.documentation { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
 
 /* Reader View */
 .reader-container {
@@ -990,7 +994,7 @@
   border-radius: 20px;
   padding: 2rem;
   width: 90%;
-  max-width: 500px;
+  max-width: 800px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(20px);
 }

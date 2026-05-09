@@ -123,3 +123,67 @@
 - [2026-05-09/21:26]: Miglioramento UX Trascrizione e View Reale
   - *Details*: Aggiunto un feedback visivo immediato per ogni singolo file in fase di upload. Ora i file audio appaiono subito in lista con uno stato dedicato ("Trascrizione in corso..."). Inoltre, nella vista del documento (Lettore), il lorem ipsum è stato rimosso per mostrare la trascrizione reale generata dall'API.
   - *Tech Notes*: Refactoring di `processFiles` in `App.jsx` per l'inserimento di placeholder asincroni. Aggiornato il rendering condizionale in `preview-item` basato su `file.isTranscribing`. Modificata la vista `read_file` per fare render di `currentFile.content` se disponibile.
+
+- [2026-05-09/21:30]: Bugfix Visualizzazione Testo Mock
+  - *Details*: Risolto un problema per cui il testo visualizzato rimaneva "Lorem Ipsum" anche dopo la trascrizione con successo. Il bug era causato dalla mancata persistenza del testo trascritto durante il salvataggio dei file nel file system mock.
+  - *Tech Notes*: Modificato `handleSaveUploadAndGoToGoals` in `App.jsx`. Ora il mapping dei file mantiene `type` dinamico e preserva la proprietà `content` generata da ElevenLabs, permettendone la corretta visualizzazione nella vista `read_file`.
+
+- [2026-05-09/21:35]: Integrazione Trascrizione Vocale Real-time con ElevenLabs
+  - *Details*: Implementata la registrazione vocale reale per le Domande Aperte (QA) nella modalità "Studia". Quando l'utente preme il microfono, il sistema richiede l'accesso al dispositivo, registra l'audio in formato WebM e, al termine, lo invia all'API ElevenLabs Scribe per generare la trascrizione reale dell'utente.
+  - *Tech Notes*: Sostituito il timer mock in `handleMicClick` all'interno di `App.jsx` utilizzando le API native del browser (`navigator.mediaDevices.getUserMedia` e `MediaRecorder`). L'audio campionato viene racchiuso in un `Blob` e inviato asincronamente all'endpoint `v1/speech-to-text`, integrando il medesimo flusso usato precedentemente per l'upload dei file. Aggiunti gli hook `useRef` per la persistenza del `MediaRecorder` senza triggerare render.
+
+- [2026-05-09/21:58]: UI Valutazione IA Multicategoria (Feedback QA)
+  - *Details*: Migliorata drasticamente la componente visiva del feedback dell'IA dopo la registrazione di una risposta orale. Invece di un semplice testo, ora il sistema simula una valutazione analitica multicategoria (Coerenza, Fluidità, Precisione Lessicale, Completezza) visualizzata con grafici a barre eleganti.
+  - *Tech Notes*: Modificata la funzione `handleEvaluateAudio` in `App.jsx` per generare un oggetto feedback complesso (`general` e `categories`). Sostituito il layout monolitico del `.ai-feedback-box` con una struttura a colonna contenente un grid `auto-fit` per le progress-bar di ogni metrica. Resa dinamica la colorazione delle barre.
+
+- [2026-05-09/22:00]: Navigazione Calendario e Generazione Dinamica
+  - *Details*: Implementata la navigazione nel calendario tramite i pulsanti freccia (avanti/indietro) e il pulsante "Oggi". La griglia dei giorni non è più hardcoded ma viene generata dinamicamente in base al mese e all'anno selezionati.
+  - *Tech Notes*: Modificato `App.jsx`. Aggiunto lo stato `calendarDate` e la funzione helper `getCalendarDays` per calcolare i giorni del mese allineati alla settimana (Lunedì-Domenica). Aggiornata la vista `calendar` per usare queste nuove logiche e gestire l'evidenziazione del giorno corrente in modo dinamico.
+
+- [2026-05-09/22:04]: Refactoring Architettura Upload File (Chunking e Subfolder)
+  - *Details*: Modificato drasticamente il flusso di caricamento. Ora, quando si aggiunge un file, il sistema non lo inserisce in modo lineare nella cartella della materia, ma crea dinamicamente 5 sottocartelle ("Capitolo 1" a "Capitolo 5"). Il file caricato viene quindi spezzettato in 5 chunk e ogni porzione viene assegnata a una subdirectory diversa. È stata aggiunta un'interfaccia di navigazione a più livelli (Materia -> Sottocartella -> Chunk).
+  - *Tech Notes*: Modificato `handleSaveUploadAndGoToGoals` in `App.jsx` per generare gli oggetti `isFolder: true` e splittare il payload `f.content` (e metadati proporzionali, come pagine/parole). Aggiunto lo stato `currentSubFolder` per consentire il drill-down all'interno della vista cartella. Aggiornati i contatori di risorse nella home e la UI di `currentView === 'folder'` per renderizzare condizionalmente le icone directory e la header di "ritorno" alla cartella root.
+
+- [2026-05-09/22:07]: Refactoring Architettura Quiz (Studio Ancorato alle Sottocartelle)
+  - *Details*: Modificato il livello gerarchico in cui avviene lo studio. Le flashcard e le domande aperte create durante la lettura di un chunk vengono ora salvate all'interno dello scope della sua sottocartella (es. "Capitolo 1"), invece che alla radice della materia. Il pulsante "Studia" è stato rimosso dai singoli file ed è stato spostato al livello della sottocartella.
+  - *Tech Notes*: Modificata la struttura chiave di `subjectQuestions` passando da `currentFolder` a `${currentFolder}/${currentSubFolder}` per isolare il pool di domande per argomento. Aggiornato `handleCreateQuestion` per ereditare la sottocartella corretta. Rimossi i pulsanti di avvio studio (`handleStudyFile`) sui singoli chunk in `App.jsx` e inserito un nuovo pulsante `handleStudyFolder` sulle card directory per raggruppare le sessioni.
+
+- [2026-05-09/22:08]: Integrazione Lettura Reale per File di Testo
+  - *Details*: Aggiornata la logica di caricamento dei file. Ora, se si caricano file `.txt` o file di tipo testuale (`text/*`), il loro contenuto viene letto e importato realmente. I file audio/video continuano a passare da ElevenLabs per la trascrizione, mentre per i file binari generici (es. PDF complessi) viene ancora utilizzata la stringa di mock di base per evitare freeze del browser.
+  - *Tech Notes*: Modificato `processFiles` in `App.jsx`. Inserita l'istanziazione nativa di `FileReader` e del metodo asincrono `readAsText()` all'interno dell'else branch per i file non-transcribing. Aggiornate le metriche `pages` e `words` basandosi sul reale volume del testo ingerito tramite split.
+
+- [2026-05-09/22:10]: Rimozione Progetti Senza Nome
+  - *Details*: Aggiunta una logica di cleanup in fase di inizializzazione dello stato per `fileSystem` e `goals`. Ora rimuove automaticamente qualsiasi chiave vuota o composta solo da spazi, risolvendo il problema dei progetti "senza nome" salvati nel `localStorage`.
+  - *Tech Notes*: Modificato `App.jsx` aggiungendo l'iterazione `Object.keys().forEach()` con `delete` per le chiavi non valide durante il caricamento dei dati.
+
+- [2026-05-09/22:25]: Sostituzione Difficoltà con Tipologia File
+  - *Details*: Sostituita la label della difficoltà con la tipologia del file durante il caricamento. L'utente può ora scegliere tra "Personal Notes" (note/appunti) e "Official Documentation" (documentazione ufficiale).
+  - *Tech Notes*: Modificati `App.jsx` e `App.css`. Aggiornato il selettore nella vista di upload e la visualizzazione del badge nella lista dei file. Aggiunti stili CSS per le nuove classi `.notes` e `.documentation`.
+
+- [2026-05-09/22:30]: Full Translation to English
+  - *Details*: Translated all user-facing text from Italian to English, including sidebar, calendar, upload section, goals, and statistics views.
+  - *Tech Notes*: Modified `App.jsx`. Updated locale strings to `en-US` for date formatting and translated all hardcoded Italian strings in JSX.
+
+- [2026-05-09/22:35]: Fix Calendar Empty Issue
+  - *Details*: Fixed an issue where the calendar appeared empty after translation because it was looking for English day names while existing data in `localStorage` used Italian names.
+  - *Tech Notes*: Modified `App.jsx`. Updated `DAYS` and `dayNames` to English, but added fallback checks for Italian day names in both the calendar loop and check-in logic to support legacy data.
+
+- [2026-05-09/22:40]: Calendar Deadline Integration
+  - *Details*: Made the calendar study plan coherent with the goal deadline. Sessions are now only displayed on the calendar up to the specified deadline date.
+  - *Tech Notes*: Modified `App.jsx`. Added a date comparison check in the calendar grid loop to compare the cell date with the goal's `deadline` string.
+
+- [2026-05-09/22:35]: Keywords/Hints for Question Answering
+  - *Details*: Added the ability to define keywords or hints during the creation of flashcards and open questions. During the study phase, users can click to reveal these hints if they are having difficulty answering.
+  - *Tech Notes*: Modified `App.jsx` to extend `createQuestionState` and `studyState` to include hints management. Added input field and badges for hints in the creation modal. In the study modes (flashcards and QA), added a hints section that conditionally renders and unmasks individual hints when clicked by the user, updating `activeHints` state.
+
+- [2026-05-09/22:42]: Modal UI Improvements & Multi-add
+  - *Details*: Improved the user interface of the modal used for adding flashcards and questions. It now features a more visually appealing header with a descriptive subtitle. The "Save" button was transformed into "Add Question" and the modal no longer closes automatically upon adding, allowing the user to seamlessly add multiple questions in succession. The "Cancel" button was changed to "Done" to better reflect its new purpose.
+  - *Tech Notes*: Modified `App.jsx` CSS-in-JS styles for the `.modal-header` and `.modal-footer`. Updated the `handleCreateQuestion` to retain `isOpen: true` inside `createQuestionState`, clearing only the form inputs.
+
+- [2026-05-09/22:45]: UI Refactoring: Two-column Layout for Question Creation
+  - *Details*: Redesigned the question creation modal to feature a two-column layout, significantly reducing vertical scrolling. The left column now contains the Question and Answer input fields, while the right column hosts the Hints management interface. Additionally, the modal's maximum width was increased to properly accommodate the side-by-side arrangement.
+  - *Tech Notes*: Modified `App.jsx` inline styles within the modal `form` to use a flex container (`display: flex`, `gap: 2rem`). Adjusted `App.css` by changing `.modal-content`'s `max-width` from `500px` to `800px`.
+
+- [2026-05-09/22:46]: Modal Centering Fix
+  - *Details*: Fixed a layout bug where the question creation modal was not perfectly centered relative to the entire screen. The modal was previously offset to the right because it was placed inside an animated container that established a new CSS containing block.
+  - *Tech Notes*: Moved the `createQuestionState.isOpen` modal render block in `App.jsx` out of the `<AnimatePresence>` component and placed it directly inside the `<main>` tag, ensuring that its `position: fixed` behaves relative to the viewport.
