@@ -940,6 +940,11 @@ function App() {
       setCurrentView('obiettivi');
     } else {
       setCurrentView('folder');
+      // Demo redirection to The Ethics of AI with plan proposal
+      setPlanParts(JSON.parse(JSON.stringify(ETHICS_OF_AI_PARTS)));
+      setIsPlanProposal(true);
+      setOpenPlanParts(new Set(['part1']));
+      setCurrentFolder('The Ethics of AI');
     }
     setPreviousView(null);
   };

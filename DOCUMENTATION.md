@@ -312,5 +312,9 @@
   - *Details*: Added a one-time migration to clear existing questions for "The Ethics of AI" and its subfolders from `localStorage`. This ensures the user starts with a clean slate for the demo and only sees questions they create.
   - *Tech Notes*: Added check for `clearEthicsQuestionsMigration` in `useState` initializer for `subjectQuestions` in `App.jsx`. If not present, deletes relevant keys from `localStorage` and sets the flag.
 
+- [2026-05-10/10:44]: Redirect to "The Ethics of AI" Proposal After Saving Goals
+  - *Details*: Modified the behavior after saving goals in the file upload flow. Now, instead of going to the folder view of the newly created subject, the user is redirected to "The Ethics of AI" collection with the plan proposal view active, as requested for the demo flow.
+  - *Tech Notes*: Updated `handleSaveGoals` in `App.jsx` to set `currentFolder` to 'The Ethics of AI', initialize `planParts`, and set `isPlanProposal` to `true` when `previousView` is not 'obiettivi'.
+
 
 
