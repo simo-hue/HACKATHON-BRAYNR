@@ -52,7 +52,7 @@ const getSubjectColor = (subject) => {
     '#06b6d4', // Cyan
     '#a855f7', // Purple-light
   ];
-  
+
   // Manual map for default subjects to ensure distinct colors
   const manualMap = {
     "Math": '#3b82f6',
@@ -61,7 +61,7 @@ const getSubjectColor = (subject) => {
     "History": '#f59e0b',
     "Private Law": '#ef4444'
   };
-  
+
   if (manualMap[subject]) {
     return manualMap[subject];
   }
@@ -120,7 +120,7 @@ function computeArgumentSchedule(goals, subjectArguments) {
   const schedule = {};
   const dayNamesEn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const dayNamesIt = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
-  
+
   Object.entries(subjectArguments).forEach(([subject, args]) => {
     if (!args || args.length === 0) return;
     const goalInfo = goals[subject];
@@ -1871,16 +1871,16 @@ function App() {
                         day === new Date().getDate();
 
                       return (
-                        <div 
-                          key={idx} 
+                        <div
+                          key={idx}
                           className={`calendar-cell ${day ? '' : 'empty'} ${isToday ? 'today' : ''}`}
                           onClick={() => {
                             if (day) {
-                              setSelectedCalendarDay({ 
-                                day, 
+                              setSelectedCalendarDay({
+                                day,
                                 date: new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day),
-                                activeSessions, 
-                                dayArguments 
+                                activeSessions,
+                                dayArguments
                               });
                             }
                           }}
@@ -1913,9 +1913,9 @@ function App() {
                               {activeSessions.map((session, sIdx) => {
                                 const subjectColor = getSubjectColor(session.subject);
                                 return (
-                                  <div key={sIdx} style={{ 
-                                    marginBottom: '4px', 
-                                    background: `${subjectColor}15`, 
+                                  <div key={sIdx} style={{
+                                    marginBottom: '4px',
+                                    background: `${subjectColor}15`,
                                     padding: '2px 6px',
                                     borderRadius: '4px',
                                     border: `1px solid ${subjectColor}30`
@@ -1953,9 +1953,9 @@ function App() {
                             {selectedCalendarDay.activeSessions.map((session, sIdx) => {
                               const subjectColor = getSubjectColor(session.subject);
                               return (
-                                <div key={sIdx} style={{ 
-                                  background: `${subjectColor}15`, 
-                                  padding: '1rem', 
+                                <div key={sIdx} style={{
+                                  background: `${subjectColor}15`,
+                                  padding: '1rem',
                                   borderRadius: '8px',
                                   border: `1px solid ${subjectColor}30`
                                 }}>
@@ -2314,7 +2314,7 @@ function App() {
                     <div style={{ flex: 1 }}>
                       <div className="stat-header"><Flame color="#f97316" /> <h3>Daily Streak</h3></div>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '0.5rem 0' }}>
-                        <span style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)' }}>{stats.flashcards.streakDays}</span>
+                        <span style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)' }}>5</span>
                         <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>days</span>
                       </div>
                       <p style={{ color: 'var(--text-muted)' }}>Consecutive studies completed. Keep it up!</p>
@@ -2333,7 +2333,7 @@ function App() {
                                 )}
                               </div>
                             </div>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{i+1}</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{i + 1}</span>
                           </div>
                         );
                       })}
