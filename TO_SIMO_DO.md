@@ -9,6 +9,6 @@
 [] set the goal
 [] create plan button
 [] show the generated plan
+[] possibility to decline or accept the plan
+[] possibility to move the arguments in different chapters
 [] 
-[]
-[]

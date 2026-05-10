@@ -300,5 +300,9 @@
   - *Details*: Updated the workflow after uploading files. Now, clicking "Save and Continue" redirects the user to the goal setting view instead of directly to the folder view. The files are viewed only after the goal is set or skipped.
   - *Tech Notes*: Modified `handleSaveUploadAndGoToGoals` in `App.jsx` to set `currentView` to `'set_goals'` and initialized `tempGoal`.
 
+- [2026-05-10/10:05]: Create Plan Redirects to Proposal View
+  - *Details*: Modified the behavior of the "Create Plan" button. Now, instead of just switching to "The Ethics of AI" folder, it redirects to "The Ethics of AI" with the plan proposal/acceptance view active.
+  - *Tech Notes*: Updated `handleCreatePlanClick` in `App.jsx` to set `isPlanProposal` to `true` and initialize `planParts` and `openPlanParts`.
+
 
 

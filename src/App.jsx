@@ -906,6 +906,9 @@ function App() {
         return updated;
       });
       setIsCreatingPlan(false);
+      setPlanParts(JSON.parse(JSON.stringify(ETHICS_OF_AI_PARTS)));
+      setIsPlanProposal(true);
+      setOpenPlanParts(new Set(['part1']));
       setCurrentFolder('The Ethics of AI');
     }, 2000);
   };
