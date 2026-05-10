@@ -114,3 +114,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, commit style, and
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+
+
+
+## Next Steps
+Two extensions are planned for the next iteration of the platform. Both follow the same design line as the current prototype: one extends the planning phase, the other introduces a collaborative mode.
+
+### Conversational planning assistant
+Braynr already includes an agent that interacts with the user's sources. The next step is to extend the same agent to the planning phase.
+Restructuring a study plan through the current GUI requires several manual operations: splitting a topic, merging two chapters, shrinking a section, or moving content across weeks. This friction is on the wrong layer — it taxes the student on interface logistics rather than on the planning decision itself.
+Moving these interactions into a conversational channel ("split this chapter in two", "move next week's topic to after the exam") keeps the student focused on how to structure their own material. The agent acts as a planning partner, and the interface stops being a bottleneck on the planning activity.
+
+### Collaborative collections
+The second extension turns the collection from an individual artifact into a shared one. A group of students can create a joint collection, each uploading their own sources into a shared pool. The agent plans the chapter and topic decomposition once, over the union of all sources, producing a single shared structure.
+The temporal plan remains individual: each student schedules the shared chapters according to their own pace and commitments. The shared structure gives the group a common reference; the individual schedule preserves each student's autonomy.
+At the end of each chapter, every student still produces their own elaborations (flashcards, keywords, etc.) as in the individual flow. The added step is that, once a student completes a chapter, they are challenged to answer their peers' flashcards and to guess the keywords their peers chose for the same chapter.
+The mechanic has two effects. The competitive layer increases engagement. More importantly, working through a peer's reformulation of the same material exposes the student to a different encoding of the same concepts, which adds a further round of active elaboration on top of the individual one.
