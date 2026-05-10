@@ -1064,12 +1064,12 @@ function App() {
             )}
             {currentView === 'part_folder' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <button onClick={() => { setCurrentPart(null); setCurrentView('folder'); }} className="btn-back">
+                <button onClick={() => { setCurrentPart(null); setCurrentSubFolder(null); setCurrentView('folder'); }} className="btn-back">
                   <ArrowLeft size={20} />
                 </button>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.25rem', fontWeight: 600, fontSize: '0.85rem' }}>
-                    <span style={{ cursor: 'pointer' }} onClick={() => { setCurrentPart(null); setCurrentView('folder'); }}>{currentFolder}</span>
+                    <span style={{ cursor: 'pointer' }} onClick={() => { setCurrentPart(null); setCurrentSubFolder(null); setCurrentView('folder'); }}>{currentFolder}</span>
                     <ChevronRight size={14} />
                     <span style={{ color: 'var(--text-muted)' }}>{currentPart?.name}</span>
                   </div>
@@ -1361,7 +1361,7 @@ function App() {
                           initial={{ opacity: 0, y: 16 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.07 }}
-                          onClick={() => { setCurrentPart(part); setCurrentView('part_folder'); }}
+                          onClick={() => { setCurrentPart(part); setCurrentSubFolder(part.name); setCurrentView('part_folder'); }}
                           style={{ '--part-color': part.color }}
                         >
                           <div className="part-folder-icon">
@@ -1400,7 +1400,7 @@ function App() {
                               initial={{ opacity: 0, y: 16 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.07 }}
-                              onClick={() => { setCurrentPart({ ...part, chapters: part.files }); setCurrentView('part_folder'); }}
+                              onClick={() => { setCurrentPart({ ...part, chapters: part.files }); setCurrentSubFolder(part.name); setCurrentView('part_folder'); }}
                               style={{ '--part-color': '#00CBCC' }}
                             >
                               <div className="part-folder-icon">
@@ -1605,7 +1605,7 @@ function App() {
               <motion.div key="study_mode" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="study-container">
 
                 <div className="study-header">
-                  <button onClick={() => setCurrentView('folder')} className="btn-back">
+                  <button onClick={() => { setCurrentView('folder'); setCurrentSubFolder(null); }} className="btn-back">
                     <ArrowLeft size={20} />
                   </button>
                   <div>
@@ -1652,7 +1652,7 @@ function App() {
                           </div>
                         </div>
 
-                        <button className="btn-save" onClick={() => setCurrentView('folder')} style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
+                        <button className="btn-save" onClick={() => { setCurrentView('folder'); setCurrentSubFolder(null); }} style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
                           Back to Subject
                         </button>
                       </div>

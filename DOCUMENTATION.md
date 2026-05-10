@@ -304,5 +304,9 @@
   - *Details*: Modified the behavior of the "Create Plan" button. Now, instead of just switching to "The Ethics of AI" folder, it redirects to "The Ethics of AI" with the plan proposal/acceptance view active.
   - *Tech Notes*: Updated `handleCreatePlanClick` in `App.jsx` to set `isPlanProposal` to `true` and initialize `planParts` and `openPlanParts`.
 
+- [2026-05-10/10:13]: Fix Question Saving in Subfolders
+  - *Details*: Fixed a bug where questions created inside a document in a subfolder were not showing up in study mode. This was because `currentSubFolder` was not being set when entering a part folder, causing questions to be saved under the wrong key.
+  - *Tech Notes*: Modified `App.jsx` to set `currentSubFolder` to `part.name` when clicking on a part card, and clear it when navigating back to the main folder view or leaving study mode.
+
 
 
