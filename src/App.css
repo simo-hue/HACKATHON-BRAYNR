@@ -523,14 +523,14 @@
   flex: 3;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  padding: 2.5rem;
+  padding: 1.5rem;
   border-radius: 20px;
   backdrop-filter: blur(20px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .form-group {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 .form-group label {
   display: flex;
@@ -671,7 +671,7 @@
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 20px;
-  padding: 2rem;
+  padding: 1rem 1.5rem;
   height: fit-content;
   backdrop-filter: blur(20px);
   position: relative;

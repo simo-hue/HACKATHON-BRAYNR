@@ -243,3 +243,15 @@
 - [2026-05-10/09:04]: Add Migration for 'Diritto Privato' to 'Private Law'
   - *Details*: Added a migration in the `goals` state initialization to rename "Diritto Privato" to "Private Law" if it exists in the loaded `localStorage` data. This fixes the issue where the user still saw the old name due to cached data.
   - *Tech Notes*: Modified `App.jsx` to check if `base["Diritto Privato"]` exists, assign it to `base["Private Law"]`, and delete the old key.
+
+- [2026-05-10/09:07]: Granular Daily Hours Slider
+  - *Details*: Modified the "Daily study hours" slider in the goals view to be more granular. It now has a step of 0.5 hours instead of 1 hour.
+  - *Tech Notes*: Added `step="0.5"` to the `<input type="range">` and changed `parseInt` to `parseFloat` in the `onChange` handler in `App.jsx`.
+
+- [2026-05-10/09:08]: Relocate and Expand AI Estimate Box
+  - *Details*: Moved the "Braynr AI Estimate" box to the bottom of the "set_goals" view and made it expand to full width.
+  - *Tech Notes*: Moved the `div.suggestion-box` outside of `div.goals-layout` and added inline styles `width: '100%'` and `marginTop: '2rem'`. Also set `flex: '1'` on `div.goals-form` to fill the space.
+
+- [2026-05-10/09:09]: Compact Layout for Goals View
+  - *Details*: Reduced padding and margins in the goals view to help fit all content on the screen without scrolling.
+  - *Tech Notes*: Reduced padding in `.goals-form` and `.suggestion-box`, and reduced margin-bottom in `.form-group` in `App.css`. Also reduced `marginTop` of `suggestion-box` in `App.jsx`.

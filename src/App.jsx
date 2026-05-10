@@ -2043,7 +2043,7 @@ function App() {
             {currentView === 'set_goals' && (
               <motion.div key="set_goals" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="goals-view-container">
                 <div className="goals-layout">
-                  <div className="goals-form">
+                  <div className="goals-form" style={{ flex: '1' }}>
                     <div className="form-group">
                       <label><Calendar size={18} /> By when do you want to complete the study?</label>
                       <input type="date" className="input-date" value={tempGoal.deadline} onChange={(e) => setTempGoal({ ...tempGoal, deadline: e.target.value })} />
@@ -2052,7 +2052,7 @@ function App() {
                     <div className="form-group">
                       <label><Clock size={18} /> Daily study hours (estimated)</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <input type="range" min="1" max="12" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({ ...tempGoal, dailyHours: parseInt(e.target.value) })} className="range-slider" />
+                        <input type="range" min="1" max="12" step="0.5" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({ ...tempGoal, dailyHours: parseFloat(e.target.value) })} className="range-slider" />
                         <span className="hours-display">{tempGoal.dailyHours} hours</span>
                       </div>
                     </div>
@@ -2075,32 +2075,32 @@ function App() {
                       <button className="btn-save" onClick={handleSaveGoals}>Save Goal</button>
                     </div>
                   </div>
+                </div>
 
-                  <div className="suggestion-box">
-                    <div className="suggestion-header">
-                      <Sparkles size={20} color="#a78bfa" />
-                      <span>Braynr AI Estimate</span>
-                    </div>
-                    <div className="suggestion-body">
-                      {Object.values(goals).filter(g => g.progress === 100).length >= 3 ? (
-                        <>
-                          <p>Based on the analyzed materials ({fileSystem[currentFolder]?.length || 0} files) and your <strong>{Object.values(goals).filter(g => g.progress === 100).length} previous projects</strong>, we calculate that approximately <strong>14 hours</strong> of active study are necessary for deep learning.</p>
-                          {tempGoal.daysOfWeek.length > 0 ? (
-                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
-                              Studying <strong>{tempGoal.dailyHours} hours</strong> for <strong>{tempGoal.daysOfWeek.length} days</strong> per week, you will complete the subject in about <strong>{Math.ceil(14 / (tempGoal.dailyHours * tempGoal.daysOfWeek.length))} weeks</strong>.
-                            </p>
-                          ) : (
-                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Select study days to get a more accurate completion estimate.</p>
-                          )}
-                        </>
-                      ) : (
-                        <p style={{ color: 'var(--text-muted)' }}>
-                          The AI estimation algorithm will activate after you have completed at least <strong>3 projects</strong>. This allows us to offer you a personalized and consistent estimate with your pace.
-                          <br /><br />
-                          You have currently completed <strong>{Object.values(goals).filter(g => g.progress === 100).length}</strong> projects.
-                        </p>
-                      )}
-                    </div>
+                <div className="suggestion-box" style={{ width: '100%', marginTop: '1rem' }}>
+                  <div className="suggestion-header">
+                    <Sparkles size={20} color="#a78bfa" />
+                    <span>Braynr AI Estimate</span>
+                  </div>
+                  <div className="suggestion-body">
+                    {Object.values(goals).filter(g => g.progress === 100).length >= 3 ? (
+                      <>
+                        <p>Based on the analyzed materials ({fileSystem[currentFolder]?.length || 0} files) and your <strong>{Object.values(goals).filter(g => g.progress === 100).length} previous projects</strong>, we calculate that approximately <strong>14 hours</strong> of active study are necessary for deep learning.</p>
+                        {tempGoal.daysOfWeek.length > 0 ? (
+                          <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
+                            Studying <strong>{tempGoal.dailyHours} hours</strong> for <strong>{tempGoal.daysOfWeek.length} days</strong> per week, you will complete the subject in about <strong>{Math.ceil(14 / (tempGoal.dailyHours * tempGoal.daysOfWeek.length))} weeks</strong>.
+                          </p>
+                        ) : (
+                          <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Select study days to get a more accurate completion estimate.</p>
+                        )}
+                      </>
+                    ) : (
+                      <p style={{ color: 'var(--text-muted)' }}>
+                        The AI estimation algorithm will activate after you have completed at least <strong>3 projects</strong>. This allows us to offer you a personalized and consistent estimate with your pace.
+                        <br /><br />
+                        You have currently completed <strong>{Object.values(goals).filter(g => g.progress === 100).length}</strong> projects.
+                      </p>
+                    )}
                   </div>
                 </div>
               </motion.div>
