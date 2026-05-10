@@ -255,3 +255,7 @@
 - [2026-05-10/09:09]: Compact Layout for Goals View
   - *Details*: Reduced padding and margins in the goals view to help fit all content on the screen without scrolling.
   - *Tech Notes*: Reduced padding in `.goals-form` and `.suggestion-box`, and reduced margin-bottom in `.form-group` in `App.css`. Also reduced `marginTop` of `suggestion-box` in `App.jsx`.
+
+- [2026-05-10/09:10]: Manual Entry for Daily Hours
+  - *Details*: Allowed users to manually enter the daily study hours by typing in a number input, in addition to using the slider.
+  - *Tech Notes*: Replaced the `span` showing the hours with an `input type="number"` and added a label "hours" next to it in `App.jsx`.

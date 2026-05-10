@@ -2053,7 +2053,10 @@ function App() {
                       <label><Clock size={18} /> Daily study hours (estimated)</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <input type="range" min="1" max="12" step="0.5" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({ ...tempGoal, dailyHours: parseFloat(e.target.value) })} className="range-slider" />
-                        <span className="hours-display">{tempGoal.dailyHours} hours</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input type="number" min="1" max="24" step="0.5" value={tempGoal.dailyHours} onChange={(e) => setTempGoal({ ...tempGoal, dailyHours: parseFloat(e.target.value) || 0 })} className="hours-display" style={{ width: '80px', padding: '0.5rem', outline: 'none' }} />
+                          <span style={{ color: 'var(--text-muted)' }}>hours</span>
+                        </div>
                       </div>
                     </div>
 
