@@ -1,16 +1,116 @@
-# React + Vite
+# Braynr
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> AI-powered study planning — upload a source, get a structured plan, study smarter.
 
-Currently, two official plugins are available:
+Braynr is a single-page web application that takes an uploaded document (book, paper, notes) and generates an **AI study plan proposal**: it organises chapters into sections, lets you rearrange or delete individual sources, and lets you accept or decline the plan before committing to it. Accepted plans feed a personal calendar, goal tracker, and statistics dashboard.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **AI Study Plan Proposal** — upload a source and receive a structured section/chapter breakdown; accept, decline, or modify before locking it in
+- **Drag-and-drop source management** — move chapters between sections via a 3-dot context menu; delete individual sources inline
+- **Goal tracker** — set study deadlines, daily hours, and active weekdays per subject
+- **Calendar view** — weekly study sessions auto-scheduled from your goals, with per-day chapter targets
+- **Statistics dashboard** — track progress, streaks, and adherence
+- **Persistent state** — all data survives page refreshes via `localStorage`
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | [React 19](https://react.dev) |
+| Build tool | [Vite 8](https://vite.dev) |
+| Animations | [Framer Motion 12](https://www.framer.com/motion/) |
+| Icons | [Lucide React](https://lucide.dev) |
+| Styling | Plain CSS with CSS custom properties |
+| State | React `useState` + `localStorage` |
+| Linting | ESLint + `eslint-plugin-react-hooks` |
+
+No backend, no database — the app runs entirely in the browser.
+
+---
+
+## Prerequisites
+
+- **Node.js** ≥ 18
+- **npm** ≥ 9 (or pnpm / yarn)
+
+---
+
+## Getting Started
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/simo-hue/HACKATHON-BRAYNR.git
+cd HACKATHON-BRAYNR
+
+# 2. Install dependencies
+npm install
+
+# 3. Copy the environment template and fill in your keys
+cp .env.example .env
+
+# 4. Start the dev server
+npm run dev
+```
+
+The app will be available at `http://localhost:5173`.
+
+---
+
+## Available Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the Vite dev server with HMR |
+| `npm run build` | Production build → `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Run ESLint across all source files |
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and set the values before running:
+
+```
+VITE_ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+```
+
+> Variables prefixed with `VITE_` are exposed to the browser bundle. Never put secrets without the prefix into `.env`.
+
+---
+
+## Project Structure
+
+```
+HACKATHON-BRAYNR/
+├── public/               # Static assets served as-is
+├── src/
+│   ├── assets/           # Images used in components
+│   ├── App.jsx           # Root component — all views and state
+│   ├── App.css           # Component styles
+│   ├── index.css         # CSS custom properties + global reset
+│   └── main.jsx          # React DOM entry point
+├── .env.example          # Environment variable template
+├── .gitignore
+├── eslint.config.js
+├── index.html
+├── package.json
+└── vite.config.js
+```
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, commit style, and pull request guidelines.
+
+---
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.

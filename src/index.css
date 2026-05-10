@@ -4,8 +4,8 @@
   --bg-color: #0b0c10;
   --panel-bg: rgba(25, 26, 35, 0.6);
   --panel-border: rgba(255, 255, 255, 0.08);
-  --primary: #8b5cf6;
-  --primary-hover: #7c3aed;
+  --primary: #00CBCC;
+  --primary-hover: #00b3b4;
   --secondary: #3b82f6;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
@@ -26,7 +26,7 @@ body {
   overflow-x: hidden;
   /* Abstract dark background with gradient blobs */
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 25%),
+    radial-gradient(circle at 15% 50%, rgba(0, 203, 204, 0.15), transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.15), transparent 25%);
   background-attachment: fixed;
 }

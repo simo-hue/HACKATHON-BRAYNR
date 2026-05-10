@@ -35,13 +35,14 @@ import {
   Square,
   RefreshCw,
   Zap,
-  BookOpen
+  BookOpen,
+  MoreVertical
 } from 'lucide-react';
 import './App.css';
 
 const getSubjectColor = (subject) => {
   const palette = [
-    '#8b5cf6', // Purple
+    '#00CBCC', // Purple
     '#ec4899', // Pink
     '#3b82f6', // Blue
     '#10b981', // Green
@@ -58,14 +59,6 @@ const getSubjectColor = (subject) => {
 };
 
 const ETHICS_OF_AI_PARTS = [
-  {
-    id: "intro",
-    name: "Introduction",
-    color: "#8b5cf6",
-    chapters: [
-      { id: 9001, name: "Introduction", difficulty: "medio", pages: 18, words: 4800, content: "§ Intervening in the ethics of AI: a systematic delineation of the power-aware approach\n§ We must adopt a critical anthropocentrism in the ethics of AI\n§ The ethics of AI needs to forge an alliance with social philosophy and critical theories\n§ Ethics needs a two-step methodology: from critique to normativity\n§ Structure of the book" }
-    ]
-  },
   {
     id: "part1",
     name: "Part I – The Power of AI",
@@ -179,6 +172,13 @@ function App() {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [previousView, setPreviousView] = useState(null);
   const [currentFile, setCurrentFile] = useState(null);
+
+  // Plan Proposal State
+  const [isPlanProposal, setIsPlanProposal] = useState(false);
+  const [planParts, setPlanParts] = useState(() => JSON.parse(JSON.stringify(ETHICS_OF_AI_PARTS)));
+  const [openPlanParts, setOpenPlanParts] = useState(new Set(['part1']));
+  const [activeMoveMenu, setActiveMoveMenu] = useState(null);
+  const [moveMenuPos, setMoveMenuPos] = useState({ top: 0, right: 0 });
 
   // Mock File System State
   const [fileSystem, setFileSystem] = useState(() => {
@@ -662,7 +662,7 @@ function App() {
           categories: [
             { name: "Coerenza", score: Math.floor(Math.random() * 20) + 80, color: '#10b981' },
             { name: "Fluidità", score: Math.floor(Math.random() * 30) + 70, color: '#3b82f6' },
-            { name: "Precisione Lessicale", score: Math.floor(Math.random() * 25) + 75, color: '#8b5cf6' },
+            { name: "Precisione Lessicale", score: Math.floor(Math.random() * 25) + 75, color: '#00CBCC' },
             { name: "Completezza", score: Math.floor(Math.random() * 40) + 60, color: '#f59e0b' },
           ]
         },
@@ -707,6 +707,53 @@ function App() {
     });
 
     setCreateQuestionState(prev => ({ ...prev, q: '', a: '', hints: [], newHint: '' }));
+  };
+
+  // Plan Proposal Handlers
+  const handleAcceptPlan = () => {
+    setIsPlanProposal(false);
+  };
+
+  const handleDeclinePlan = () => {
+    setPlanParts(JSON.parse(JSON.stringify(ETHICS_OF_AI_PARTS)));
+    setIsPlanProposal(false);
+    navigateToHome();
+  };
+
+  const togglePlanPart = (partId) => {
+    setOpenPlanParts(prev => {
+      const next = new Set(prev);
+      next.has(partId) ? next.delete(partId) : next.add(partId);
+      return next;
+    });
+  };
+
+  const handleMoveChapter = (chapterId, fromPartId, toPartId) => {
+    setPlanParts(prev => {
+      const updated = prev.map(p => ({ ...p, chapters: [...p.chapters] }));
+      const fromPart = updated.find(p => p.id === fromPartId);
+      const toPart = updated.find(p => p.id === toPartId);
+      const idx = fromPart.chapters.findIndex(c => c.id === chapterId);
+      if (idx === -1) return prev;
+      const [chapter] = fromPart.chapters.splice(idx, 1);
+      toPart.chapters.push(chapter);
+      return updated;
+    });
+    setActiveMoveMenu(null);
+  };
+
+  const handleDeleteChapter = (chapterId, fromPartId) => {
+    setPlanParts(prev =>
+      prev.map(p => p.id !== fromPartId ? p : { ...p, chapters: p.chapters.filter(c => c.id !== chapterId) })
+    );
+  };
+
+  const openMoveMenu = (e, chapterId, fromPartId) => {
+    e.stopPropagation();
+    if (activeMoveMenu?.chapterId === chapterId) { setActiveMoveMenu(null); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMoveMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    setActiveMoveMenu({ chapterId, fromPartId });
   };
 
   // Sidebar navigation handlers
@@ -951,7 +998,7 @@ function App() {
                 </button>
                 <div>
                   <h1>{currentFolder}</h1>
-                  <p>{currentFolder === 'The Ethics of AI' ? 'Rainer Mühlhoff · Seleziona un argomento per iniziare.' : 'I tuoi documenti e appunti per questa materia.'}</p>
+                  <p>{currentFolder === 'The Ethics of AI' ? (isPlanProposal ? 'Rainer Mühlhoff · AI-generated plan — review before accepting.' : 'Rainer Mühlhoff · Seleziona un argomento per iniziare.') : 'I tuoi documenti e appunti per questa materia.'}</p>
                 </div>
               </div>
             )}
@@ -1093,7 +1140,7 @@ function App() {
             {currentView === 'home' && (
               <motion.div key="home" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="grid-container">
                 {Object.keys(fileSystem).map((folderName, idx) => (
-                  <motion.div key={idx} className="folder-card" whileHover={{ y: -5, scale: 1.02 }} onClick={() => { setCurrentFolder(folderName); setCurrentView('folder'); }} style={{ position: 'relative' }}>
+                  <motion.div key={idx} className="folder-card" whileHover={{ y: -5, scale: 1.02 }} onClick={() => { setCurrentFolder(folderName); setCurrentView('folder'); if (folderName === 'The Ethics of AI') { setPlanParts(JSON.parse(JSON.stringify(ETHICS_OF_AI_PARTS))); setIsPlanProposal(true); setOpenPlanParts(new Set(['part1'])); } else { setIsPlanProposal(false); } }} style={{ position: 'relative' }}>
                     <button className="btn-delete-folder" onClick={(e) => handleDeleteFolder(e, folderName)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', opacity: 0.5, transition: '0.2s' }}>
                       <Trash2 size={18} />
                     </button>
@@ -1137,29 +1184,139 @@ function App() {
             {currentView === 'folder' && (
               <motion.div key="folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
                 {currentFolder === 'The Ethics of AI' ? (
-                  /* BOOK VIEW: show argument/part subfolder cards */
-                  <div className="parts-grid">
-                    {ETHICS_OF_AI_PARTS.map((part, idx) => (
-                      <motion.div
-                        key={part.id}
-                        className="part-folder-card"
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.07 }}
-                        onClick={() => { setCurrentPart(part); setCurrentView('part_folder'); }}
-                        style={{ '--part-color': part.color }}
-                      >
-                        <div className="part-folder-icon">
-                          <BookOpen size={26} color={part.color} />
+                  isPlanProposal ? (
+                    /* PLAN PROPOSAL VIEW */
+                    <div className="plan-proposal" onClick={() => setActiveMoveMenu(null)}>
+                      {/* Banner */}
+                      <motion.div className="plan-banner" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+                        <div className="plan-banner-left">
+                          <div className="plan-banner-icon">
+                            <Sparkles size={20} />
+                          </div>
+                          <div>
+                            <h3 className="plan-banner-title">AI Study Plan Proposal</h3>
+                            <p className="plan-banner-subtitle">Based on your source, we organized the material into sections. Review, rearrange chapters if needed, then accept or decline.</p>
+                          </div>
                         </div>
-                        <div className="part-folder-info">
-                          <h4>{part.name}</h4>
-                          <span className="part-chapter-count">{part.chapters.length} {part.chapters.length === 1 ? 'capitolo' : 'capitoli'}</span>
+                        <div className="plan-banner-actions">
+                          <button className="btn-decline-plan" onClick={handleDeclinePlan}>
+                            <XCircle size={15} /> Decline
+                          </button>
+                          <button className="btn-accept-plan" onClick={handleAcceptPlan}>
+                            <CheckCircle size={15} /> Accept Plan
+                          </button>
                         </div>
-                        <ChevronRight size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                       </motion.div>
-                    ))}
-                  </div>
+
+                      {/* Sections */}
+                      <div className="plan-sections">
+                        {planParts.map((part, idx) => {
+                          const isOpen = openPlanParts.has(part.id);
+                          return (
+                            <motion.div
+                              key={part.id}
+                              className="plan-section-card"
+                              initial={{ opacity: 0, y: 16 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.07 }}
+                              style={{ '--part-color': part.color }}
+                            >
+                              <button className="plan-section-header" onClick={(e) => { e.stopPropagation(); togglePlanPart(part.id); }}>
+                                <div className="plan-section-header-left">
+                                  <div className="part-folder-icon">
+                                    <BookOpen size={22} color={part.color} />
+                                  </div>
+                                  <div>
+                                    <h4 className="plan-section-title">{part.name}</h4>
+                                    <span className="part-chapter-count">{part.chapters.length} {part.chapters.length === 1 ? 'chapter' : 'chapters'}</span>
+                                  </div>
+                                </div>
+                                <ChevronRight size={16} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0 }} />
+                              </button>
+
+                              <AnimatePresence>
+                                {isOpen && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="plan-section-chapters"
+                                  >
+                                    {part.chapters.length === 0 && (
+                                      <p className="plan-empty-section">No chapters in this section.</p>
+                                    )}
+                                    {part.chapters.map((chapter) => (
+                                      <div key={chapter.id} className="plan-chapter-row">
+                                        <div className="plan-chapter-dot" style={{ background: part.color }} />
+                                        <div className="plan-chapter-info">
+                                          <span className="plan-chapter-name">{chapter.name}</span>
+                                          <span className="plan-chapter-meta">{chapter.pages} p. · {chapter.words} words</span>
+                                        </div>
+                                        <div className="plan-chapter-actions">
+                                          <button
+                                            className="btn-chapter-delete"
+                                            onClick={() => handleDeleteChapter(chapter.id, part.id)}
+                                            title="Remove source"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                          <button
+                                            className={`btn-chapter-menu${activeMoveMenu?.chapterId === chapter.id ? ' active' : ''}`}
+                                            onClick={(e) => openMoveMenu(e, chapter.id, part.id)}
+                                            title="Move to..."
+                                          >
+                                            <MoreVertical size={15} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                      <motion.div
+                        className="file-card add-file-card"
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+                        onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
+                      >
+                        <Plus size={22} /> Add a source
+                      </motion.div>
+                    </div>
+                  ) : (
+                    /* ACCEPTED BOOK VIEW: show part subfolder cards */
+                    <div className="parts-grid">
+                      {planParts.map((part, idx) => (
+                        <motion.div
+                          key={part.id}
+                          className="part-folder-card"
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.07 }}
+                          onClick={() => { setCurrentPart(part); setCurrentView('part_folder'); }}
+                          style={{ '--part-color': part.color }}
+                        >
+                          <div className="part-folder-icon">
+                            <BookOpen size={26} color={part.color} />
+                          </div>
+                          <div className="part-folder-info">
+                            <h4>{part.name}</h4>
+                            <span className="part-chapter-count">{part.chapters.length} {part.chapters.length === 1 ? 'chapter' : 'chapters'}</span>
+                          </div>
+                          <ChevronRight size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                        </motion.div>
+                      ))}
+                      <motion.div
+                        className="file-card add-file-card"
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: planParts.length * 0.07 + 0.05 }}
+                        onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
+                      >
+                        <Plus size={22} /> Add a source
+                      </motion.div>
+                    </div>
+                  )
                 ) : (
                   /* REGULAR FOLDER: show flat file list */
                   <div className="files-list">
@@ -1565,11 +1722,8 @@ function App() {
                   </div>
                 </div>
 
-                <div className="calendar-grid-header">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => <div key={d} className="weekday-label">{d}</div>)}
-                </div>
-
                 <div className="calendar-grid">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => <div key={d} className="weekday-label">{d}</div>)}
                   {(() => {
                     const argumentSchedule = computeArgumentSchedule(goals, subjectArguments);
                     return getCalendarDays(calendarDate).map((day, idx) => {
@@ -1752,7 +1906,7 @@ function App() {
                           setCurrentView('set_goals');
                         }}
                       >
-                        <Folder size={20} color="#8b5cf6" /> {subject}
+                        <Folder size={20} color="#00CBCC" /> {subject}
                       </button>
                     ))}
                   </div>
@@ -2013,7 +2167,7 @@ function App() {
 
                 {/* CARD 5: ADHERENCE (WIDE) */}
                 <div className="stat-card wide">
-                  <div className="stat-header"><Activity color="#8b5cf6" /> <h3>Consistency with Study Plan</h3></div>
+                  <div className="stat-header"><Activity color="#00CBCC" /> <h3>Consistency with Study Plan</h3></div>
                   <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
                     Your last two weeks. You have an adherence rate of <strong style={{ color: 'white' }}>{Math.round((stats.adherence.completedDays / Math.max(1, (stats.adherence.completedDays + stats.adherence.missedDays))) * 100)}%</strong>.
                   </p>
@@ -2028,6 +2182,35 @@ function App() {
 
           </AnimatePresence>
         </div>
+
+        {/* Fixed move-menu overlay — rendered outside AnimatePresence so position:fixed isn't trapped by transforms */}
+        {activeMoveMenu && (
+          <>
+            <div className="plan-move-backdrop" onClick={() => setActiveMoveMenu(null)} />
+            <motion.div
+              className="plan-move-menu"
+              style={{ position: 'fixed', top: moveMenuPos.top, right: moveMenuPos.right }}
+              initial={{ opacity: 0, scale: 0.92, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ duration: 0.13 }}
+            >
+              <div className="move-menu-label">Move to...</div>
+              {planParts
+                .filter(p => p.id !== activeMoveMenu.fromPartId)
+                .map(targetPart => (
+                  <button
+                    key={targetPart.id}
+                    className="move-menu-item"
+                    onClick={() => handleMoveChapter(activeMoveMenu.chapterId, activeMoveMenu.fromPartId, targetPart.id)}
+                  >
+                    <span className="move-menu-dot" style={{ background: targetPart.color }} />
+                    {targetPart.name}
+                  </button>
+                ))}
+            </motion.div>
+          </>
+        )}
 
         {createQuestionState.isOpen && (
           <div className="modal-overlay" onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: false })}>
