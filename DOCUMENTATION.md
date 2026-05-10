@@ -203,3 +203,23 @@
 - [2026-05-09/23:10]: Floating Action Button for Question Creation
   - *Details*: Replaced the inline "Create Flashcard / Question" button inside the file visualization view with a modern Floating Action Button (FAB) containing a "+" icon, positioned in the bottom right corner. This ensures the action is always accessible regardless of scroll position and improves overall aesthetics.
   - *Tech Notes*: Modified `App.jsx` to swap the inline button structure with a `<button className="fab-button">`. Added `.fab-button` CSS styles in `App.css` featuring a fixed position, gradient background, z-index management, and hover/active micro-animations.
+
+- [2026-05-10/08:23]: Translate Remaining Italian UI Terms to English
+  - *Details*: Translated all remaining Italian words and phrases in the user interface (such as "Studia", "Leggi", "Aggiungi", "Trascrizione non riuscita", etc.) into English to ensure full language consistency across the application. Also translated the Italian day names used in mock goals data.
+  - *Tech Notes*: Executed multiple search and replace operations in `App.jsx`. Updated standard labels (`Read`, `Study`, `Add more resources`), component badges (`p.`, `words`, `topics`), and transcription error messages. Updated mock data entries in `App.jsx` to replace `["Lun", "Mer", "Ven"]` format to `["Mon", "Wed", "Fri"]` format.
+
+- [2026-05-10/08:28]: Move Study Button to Subdirectory Level
+  - *Details*: Removed the "Study" button from individual files and moved it to the subdirectory/folder level (e.g., for each part in "The Ethics of AI" collection). This enforces studying at the conceptual level rather than file by file.
+  - *Tech Notes*: Modified `App.jsx` to remove `<button className="btn-study">` from individual file rendering blocks in both the standard folder view and part folder view. Injected the "Study" button directly inside the `part-folder-card` block and bound it to `handleStudyFolder`, which correctly scopes `currentSubFolder` to the selected part.
+
+- [2026-05-10/08:38]: Audio Transcription Preview in Upload Modal
+  - *Details*: Added a new feature to the upload modal allowing users to instantly preview the transcription text (or text content) of a file as soon as the ElevenLabs API finishes transcribing it. Users can click a "Preview" button on each file row to expand a scrollable box containing the full text.
+  - *Tech Notes*: Updated `App.jsx` by introducing the `expandedTranscriptionIdx` state to track which file preview is open. Modified the `.preview-list` map function to include an "Eye" button and an animated `<motion.div>` that renders `file.content` conditionally based on the new state. Imported the `Eye` icon from `lucide-react`.
+
+- [2026-05-10/08:44]: Explicit AI Study Plan Creation Workflow
+  - *Details*: Changed the behavior after file upload. Instead of automatically chunking files into 5 chapters in the background and redirecting to the goals page, the user is now redirected to the folder view to see their raw uploaded files directly. A new "Create Plan" button was added at the top. Clicking it shows a 2-second AI analysis animation before reorganizing the flat files into a structured study plan with chapters.
+  - *Tech Notes*: Extracted the auto-chunking logic from `handleSaveUploadAndGoToGoals` into a new `handleCreatePlanClick` function with a timeout animation powered by a new `isCreatingPlan` state. Refactored the `App.jsx` folder view logic to conditionally render either a list of flat files with a "Create Plan" button, a loading state, or the `parts-grid` interface once `hasSubfolders` becomes true.
+
+- [2026-05-10/08:47]: Demo Redirection on Plan Creation
+  - *Details*: Adjusted the study plan creation flow to guarantee that the user is immediately redirected to the highly-populated "The Ethics of AI" collection upon the completion of the 2-second loading animation. This ensures a seamless transition to the primary demonstration dataset during the hackathon.
+  - *Tech Notes*: In `App.jsx`, appended a `setCurrentFolder('The Ethics of AI')` state update immediately following `setIsCreatingPlan(false)` inside the `handleCreatePlanClick` timeout callback.

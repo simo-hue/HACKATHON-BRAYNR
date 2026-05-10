@@ -36,7 +36,8 @@ import {
   RefreshCw,
   Zap,
   BookOpen,
-  MoreVertical
+  MoreVertical,
+  Eye
 } from 'lucide-react';
 import './App.css';
 
@@ -211,25 +212,25 @@ function App() {
       "Intelligenza Artificiale": {
         deadline: "2026-06-15",
         dailyHours: 2,
-        daysOfWeek: ["Lun", "Mer", "Ven"],
+        daysOfWeek: ["Mon", "Wed", "Fri"],
         progress: 35
       },
       "Storia Contemporanea": {
         deadline: "2026-04-10",
         dailyHours: 1,
-        daysOfWeek: ["Mar", "Gio"],
+        daysOfWeek: ["Tue", "Thu"],
         progress: 100
       },
       "Basi di Dati": {
         deadline: "2026-04-20",
         dailyHours: 3,
-        daysOfWeek: ["Lun", "Mer", "Ven"],
+        daysOfWeek: ["Mon", "Wed", "Fri"],
         progress: 100
       },
       "Diritto Privato": {
         deadline: "2026-05-01",
         dailyHours: 2,
-        daysOfWeek: ["Sab", "Dom"],
+        daysOfWeek: ["Sat", "Sun"],
         progress: 100
       }
     };
@@ -237,7 +238,7 @@ function App() {
       base["The Ethics of AI"] = {
         deadline: "2026-05-31",
         dailyHours: 2,
-        daysOfWeek: ["Lun", "Mer", "Ven"],
+        daysOfWeek: ["Mon", "Wed", "Fri"],
         progress: 8
       };
     }
@@ -290,9 +291,12 @@ function App() {
   const [uploadFiles, setUploadFiles] = useState([]);
   const [checkedSubjects, setCheckedSubjects] = useState({});
   const [isUploading, setIsUploading] = useState(false);
+  const [expandedTranscriptionIdx, setExpandedTranscriptionIdx] = useState(null);
+  const [isCreatingPlan, setIsCreatingPlan] = useState(false);
 
   const processFiles = async (files) => {
     setIsUploading(true);
+    setExpandedTranscriptionIdx(null);
 
     // First, create placeholders for all files
     const filePlaceholders = Array.from(files).map((f, idx) => {
@@ -628,14 +632,14 @@ function App() {
             setStudyState(prev => ({
               ...prev,
               isProcessing: false,
-              transcript: data.text || "Trascrizione non riuscita o audio vuoto.",
+              transcript: data.text || "Transcription failed or empty audio.",
             }));
           } catch (err) {
             console.error("Transcription failed", err);
             setStudyState(prev => ({
               ...prev,
               isProcessing: false,
-              transcript: "Errore durante la trascrizione dell'audio.",
+              transcript: "Error during audio transcription.",
             }));
           }
 
@@ -815,42 +819,64 @@ function App() {
         updated[targetFolder] = [];
       }
 
-      let existingSubFolders = updated[targetFolder].filter(item => item.isFolder);
-      if (existingSubFolders.length === 0) {
-        for (let i = 1; i <= 5; i++) {
-          updated[targetFolder].push({
-            isFolder: true,
-            name: `Capitolo ${i}`,
-            files: []
-          });
-        }
-        existingSubFolders = updated[targetFolder].filter(item => item.isFolder);
-      }
-
       uploadFiles.forEach(f => {
-        const contentStr = f.content || "Contenuto del file elaborato...";
-        const chunkSize = Math.ceil(contentStr.length / 5) || 1;
-
-        for (let i = 0; i < 5; i++) {
-          const chunkStr = contentStr.slice(i * chunkSize, (i + 1) * chunkSize);
-          existingSubFolders[i].files.push({
-            name: `${f.name} - Parte ${i + 1}`,
-            type: f.type || "pdf",
-            difficulty: f.difficulty,
-            pages: Math.ceil((f.pages || 1) / 5) || 1,
-            words: Math.ceil((f.words || 1) / 5) || 1,
-            content: chunkStr
-          });
-        }
+        updated[targetFolder].push({
+          name: f.name,
+          type: f.type || "pdf",
+          difficulty: f.difficulty,
+          pages: f.pages || 1,
+          words: f.words || 1,
+          content: f.content || "Contenuto del file elaborato..."
+        });
       });
       return updated;
     });
 
     setUploadFiles([]);
     setCurrentFolder(targetFolder);
-    setTempGoal({ deadline: "", dailyHours: 2, daysOfWeek: [] });
     setPreviousView(null);
-    setCurrentView('set_goals');
+    setCurrentView('folder');
+  };
+
+  const handleCreatePlanClick = () => {
+    setIsCreatingPlan(true);
+    setTimeout(() => {
+      setFileSystem(prev => {
+        const updated = { ...prev };
+        const flatFiles = updated[currentFolder].filter(item => !item.isFolder);
+        
+        const existingSubFolders = [];
+        for (let i = 1; i <= 5; i++) {
+          existingSubFolders.push({
+            isFolder: true,
+            name: `Chapter ${i}`,
+            files: []
+          });
+        }
+
+        flatFiles.forEach(f => {
+          const contentStr = f.content || "Contenuto del file elaborato...";
+          const chunkSize = Math.ceil(contentStr.length / 5) || 1;
+
+          for (let i = 0; i < 5; i++) {
+            const chunkStr = contentStr.slice(i * chunkSize, (i + 1) * chunkSize);
+            existingSubFolders[i].files.push({
+              name: `${f.name} - Part ${i + 1}`,
+              type: f.type,
+              difficulty: f.difficulty,
+              pages: Math.ceil(f.pages / 5) || 1,
+              words: Math.ceil(f.words / 5) || 1,
+              content: chunkStr
+            });
+          }
+        });
+
+        updated[currentFolder] = existingSubFolders;
+        return updated;
+      });
+      setIsCreatingPlan(false);
+      setCurrentFolder('The Ethics of AI');
+    }, 2000);
   };
 
   const handleSaveGoals = () => {
@@ -1305,6 +1331,7 @@ function App() {
                             <h4>{part.name}</h4>
                             <span className="part-chapter-count">{part.chapters.length} {part.chapters.length === 1 ? 'chapter' : 'chapters'}</span>
                           </div>
+                          <button className="btn-study" onClick={(e) => handleStudyFolder(e, part)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', marginRight: '0.5rem' }}><Zap size={14} /> Study</button>
                           <ChevronRight size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                         </motion.div>
                       ))}
@@ -1318,44 +1345,103 @@ function App() {
                     </div>
                   )
                 ) : (
-                  /* REGULAR FOLDER: show flat file list */
-                  <div className="files-list">
-                    {fileSystem[currentFolder]?.map((file, idx) => (
-                      <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                        <div className="file-icon-bg">
-                          <FileText size={24} />
+                  /* DYNAMIC FOLDER: flat files or plan */
+                  (() => {
+                    const currentFolderFiles = fileSystem[currentFolder] || [];
+                    const hasSubfolders = currentFolderFiles.some(f => f.isFolder);
+
+                    if (hasSubfolders) {
+                      return (
+                        <div className="parts-grid">
+                          {currentFolderFiles.map((part, idx) => (
+                            <motion.div
+                              key={idx}
+                              className="part-folder-card"
+                              initial={{ opacity: 0, y: 16 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.07 }}
+                              onClick={() => { setCurrentPart({ ...part, chapters: part.files }); setCurrentView('part_folder'); }}
+                              style={{ '--part-color': '#00CBCC' }}
+                            >
+                              <div className="part-folder-icon">
+                                <BookOpen size={26} color="#00CBCC" />
+                              </div>
+                              <div className="part-folder-info">
+                                <h4>{part.name}</h4>
+                                <span className="part-chapter-count">{part.files.length} {part.files.length === 1 ? 'file' : 'files'}</span>
+                              </div>
+                              <button className="btn-study" onClick={(e) => handleStudyFolder(e, part)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', marginRight: '0.5rem' }}><Zap size={14} /> Study</button>
+                              <ChevronRight size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                            </motion.div>
+                          ))}
+                          <motion.div
+                            className="file-card add-file-card"
+                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: currentFolderFiles.length * 0.07 + 0.05 }}
+                            onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
+                          >
+                            <Plus size={22} /> Add a source
+                          </motion.div>
                         </div>
-                        <div className="file-info">
-                          <h4>{file.name}</h4>
-                          <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
-                            <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} pag. • {file.words || 3000} parole</span>
-                            <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>{file.difficulty || 'medio'}</span>
+                      );
+                    }
+
+                    return (
+                      <div className="files-list">
+                        {isCreatingPlan ? (
+                          <div style={{ textAlign: 'center', padding: '4rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                            <div className="icon-pulse" style={{ width: '80px', height: '80px', margin: '0 auto' }}><BrainCircuit size={40} color="var(--primary)" /></div>
+                            <h3 style={{ margin: 0 }}>Braynr AI is analyzing your sources...</h3>
+                            <p style={{ color: 'var(--text-muted)' }}>Creating an optimal study plan based on the content.</p>
                           </div>
-                        </div>
-                        <div style={{display: 'flex', gap: '0.5rem'}}>
-                          <button className="btn-read" onClick={() => handleReadFile(file)}>Leggi</button>
-                          <button className="btn-study" onClick={() => handleStudyFile(file)}><Zap size={16} /> Studia</button>
-                        </div>
-                      </motion.div>
-                    ))}
-                    {fileSystem[currentFolder]?.length === 0 && (
-                      <div className="empty-state">Nessun file presente in questa materia.</div>
-                    )}
-                    <motion.div
-                      className="file-card add-file-card"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (fileSystem[currentFolder]?.length || 0) * 0.05 }}
-                      onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
-                    >
-                      <Plus size={24} /> Aggiungi altre risorse
-                    </motion.div>
-                  </div>
+                        ) : (
+                          <>
+                            {currentFolderFiles.length > 0 && (
+                              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button className="btn-save" onClick={handleCreatePlanClick} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', fontSize: '1rem' }}>
+                                  <Sparkles size={18} /> Create Plan
+                                </button>
+                              </div>
+                            )}
+                            
+                            {currentFolderFiles.map((file, idx) => (
+                              <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+                                <div className="file-icon-bg">
+                                  <FileText size={24} />
+                                </div>
+                                <div className="file-info">
+                                  <h4>{file.name}</h4>
+                                  <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
+                                    <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} p. • {file.words || 3000} words</span>
+                                    <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>{file.difficulty || 'medio'}</span>
+                                  </div>
+                                </div>
+                                <div style={{display: 'flex', gap: '0.5rem'}}>
+                                  <button className="btn-read" onClick={() => handleReadFile(file)}>Read</button>
+                                </div>
+                              </motion.div>
+                            ))}
+                            {currentFolderFiles.length === 0 && (
+                              <div className="empty-state">No files present in this subject.</div>
+                            )}
+                            <motion.div
+                              className="file-card add-file-card"
+                              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: currentFolderFiles.length * 0.05 }}
+                              onClick={() => { setUploadFiles([]); setCurrentView('upload_files'); }}
+                            >
+                              <Plus size={24} /> Add more resources
+                            </motion.div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()
                 )}
 
                 {/* ARGUMENT MANAGER */}
                 <div className="arguments-section" style={{ marginTop: '2rem' }}>
                   <button className="arguments-section-header" onClick={() => setArgumentManagerOpen(prev => !prev)}>
                     <BookOpen size={18} />
-                    <span>Argomenti / Capitoli</span>
+                    <span>Topics / Chapters</span>
                     <span className="arg-count-badge">{(subjectArguments[currentFolder] || []).length}</span>
                     <ChevronRight size={16} style={{ marginLeft: 'auto', transform: argumentManagerOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
                   </button>
@@ -1372,13 +1458,13 @@ function App() {
                         </div>
                       ))}
                       {(subjectArguments[currentFolder] || []).length === 0 && (
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>Nessun argomento ancora. Aggiungine uno qui sotto.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>No topics yet. Add one below.</p>
                       )}
                       <form onSubmit={handleAddArgument} className="add-argument-form">
                         <input
                           type="text"
                           className="input-argument"
-                          placeholder="Es. Capitolo 3: Algoritmi di ricerca..."
+                          placeholder="E.g. Chapter 3: Search Algorithms..."
                           value={newArgumentTitle}
                           onChange={e => setNewArgumentTitle(e.target.value)}
                         />
@@ -1404,16 +1490,15 @@ function App() {
                       <div className="file-info">
                         <h4>{chapter.name}</h4>
                         <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
-                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{chapter.pages} pag. • {chapter.words} parole</span>
+                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{chapter.pages} p. • {chapter.words} words</span>
                           <span className={`difficulty-badge ${chapter.difficulty}`}>{chapter.difficulty}</span>
                           <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
-                            {chapter.content.split('\n').filter(l => l.trim()).length} argomenti
+                            {chapter.content.split('\n').filter(l => l.trim()).length} topics
                           </span>
                         </div>
                       </div>
                       <div style={{display: 'flex', gap: '0.5rem'}}>
-                        <button className="btn-read" onClick={() => { setPreviousView('part_folder'); handleReadFile(chapter); }}>Leggi</button>
-                        <button className="btn-study" onClick={() => { setPreviousView('part_folder'); handleStudyFile(chapter); }}><Zap size={16} /> Studia</button>
+                        <button className="btn-read" onClick={() => { setPreviousView('part_folder'); handleReadFile(chapter); }}>Read</button>
                       </div>
                     </motion.div>
                   ))}
@@ -1434,7 +1519,7 @@ function App() {
                   {currentFile?.content ? (
                     currentFile.content.includes('§') ? (
                       <>
-                        <h3 style={{ marginBottom: '1.25rem', color: 'var(--text-main)' }}>Argomenti del Capitolo</h3>
+                        <h3 style={{ marginBottom: '1.25rem', color: 'var(--text-main)' }}>Chapter Topics</h3>
                         <div className="chapter-sections">
                           {currentFile.content.split('\n').filter(l => l.trim()).map((section, i) => (
                             <div key={i} className="chapter-section-card">
@@ -1446,7 +1531,7 @@ function App() {
                       </>
                     ) : (
                       <>
-                        <h3>Trascrizione Audio</h3>
+                        <h3>Audio Transcription</h3>
                         <div className="transcription-box" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', marginTop: '1rem' }}>
                           <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0 }}>{currentFile.content}</p>
                         </div>
@@ -1840,36 +1925,63 @@ function App() {
                         <h3 className="preview-title"><CheckCircle2 size={18} color="#10b981" /> Files ready for analysis</h3>
                         <div className="preview-list">
                           {uploadFiles.map((file, idx) => (
-                            <div key={idx} className="preview-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <FileIcon size={20} color="#a5b4fc" />
-                                <div>
-                                  <span style={{ display: 'block', fontWeight: 500 }}>{file.name}</span>
-                                  {file.isTranscribing ? (
-                                    <span style={{ fontSize: '0.75rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Transcription in progress...
-                                    </span>
-                                  ) : file.error ? (
-                                    <span style={{ fontSize: '0.75rem', color: '#ef4444' }}>Error in transcription</span>
-                                  ) : (
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{file.pages} p. • {file.words} words</span>
+                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                              <div className="preview-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  <FileIcon size={20} color="#a5b4fc" />
+                                  <div>
+                                    <span style={{ display: 'block', fontWeight: 500 }}>{file.name}</span>
+                                    {file.isTranscribing ? (
+                                      <span style={{ fontSize: '0.75rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Transcription in progress...
+                                      </span>
+                                    ) : file.error ? (
+                                      <span style={{ fontSize: '0.75rem', color: '#ef4444' }}>Error in transcription</span>
+                                    ) : (
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{file.pages} p. • {file.words} words</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="difficulty-selector" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  {file.content && !file.isTranscribing && (
+                                    <button 
+                                      type="button" 
+                                      style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }} 
+                                      onClick={() => setExpandedTranscriptionIdx(expandedTranscriptionIdx === idx ? null : idx)}
+                                      title="Preview Content"
+                                    >
+                                      <Eye size={14} /> Preview
+                                    </button>
                                   )}
+                                  {[
+                                    { value: 'notes', label: 'Personal Notes' },
+                                    { value: 'documentation', label: 'Official Documentation' }
+                                  ].map(type => (
+                                    <button
+                                      key={type.value}
+                                      className={`diff-btn ${file.difficulty === type.value ? 'active' : ''} ${type.value}`}
+                                      onClick={() => setFileDifficulty(idx, type.value)}
+                                    >
+                                      {type.label}
+                                    </button>
+                                  ))}
                                 </div>
                               </div>
-                              <div className="difficulty-selector">
-                                {[
-                                  { value: 'notes', label: 'Personal Notes' },
-                                  { value: 'documentation', label: 'Official Documentation' }
-                                ].map(type => (
-                                  <button
-                                    key={type.value}
-                                    className={`diff-btn ${file.difficulty === type.value ? 'active' : ''} ${type.value}`}
-                                    onClick={() => setFileDifficulty(idx, type.value)}
+                              <AnimatePresence>
+                                {expandedTranscriptionIdx === idx && file.content && (
+                                  <motion.div 
+                                    initial={{ opacity: 0, height: 0 }} 
+                                    animate={{ opacity: 1, height: 'auto' }} 
+                                    exit={{ opacity: 0, height: 0 }}
+                                    style={{ overflow: 'hidden' }}
                                   >
-                                    {type.label}
-                                  </button>
-                                ))}
-                              </div>
+                                    <div className="transcription-preview" style={{ background: 'var(--surface)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.85rem', color: 'var(--text-main)', maxHeight: '200px', overflowY: 'auto', marginTop: '0.5rem' }}>
+                                      <strong style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>PREVIEW:</strong>
+                                      <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{file.content}</p>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
                           ))}
                         </div>
