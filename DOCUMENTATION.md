@@ -223,3 +223,23 @@
 - [2026-05-10/08:47]: Demo Redirection on Plan Creation
   - *Details*: Adjusted the study plan creation flow to guarantee that the user is immediately redirected to the highly-populated "The Ethics of AI" collection upon the completion of the 2-second loading animation. This ensures a seamless transition to the primary demonstration dataset during the hackathon.
   - *Tech Notes*: In `App.jsx`, appended a `setCurrentFolder('The Ethics of AI')` state update immediately following `setIsCreatingPlan(false)` inside the `handleCreatePlanClick` timeout callback.
+
+- [2026-05-10/08:52]: Collection View Centered Layout
+  - *Details*: Centered the entire content of a collection (both the overview and part folders) horizontally within the main viewport to create a more balanced, modern look when maximizing the window.
+  - *Tech Notes*: Added a new `.collection-container` CSS class in `App.css` utilizing `margin: 0 auto` and `max-width: 1000px`. Wrapped the primary `<motion.div>` elements for both `currentView === 'folder'` and `currentView === 'part_folder'` in `App.jsx` with this class. Additionally, updated `.files-list`, `.parts-grid`, `.arguments-section`, and `.plan-proposal` to include `margin: 0 auto; width: 100%;` to ensure all nested blocks center perfectly within the 1000px container.
+
+- [2026-05-10/08:55]: Renamed Default Hardcoded Collections
+  - *Details*: Renamed default collections to English equivalents and added files to empty collections.
+  - *Tech Notes*: In `App.jsx` within the initial state of `fileSystem` and `goals`, renamed `"Intelligenza Artificiale"` to `"Math"` and updated its files to `"Calculus I - Limits.pdf"` and `"Linear Algebra.docx"`. Added default files to `"History"` and `"Databases"`.
+
+- [2026-05-10/09:02]: Translate Subject Name to English
+  - *Details*: Translated "Diritto Privato" to "Private Law" in the goals state as requested by the user.
+  - *Tech Notes*: Modified `App.jsx` to update the key in the initial state of `goals`.
+
+- [2026-05-10/09:03]: Hardcode Resources Count for 'The Ethics of AI'
+  - *Details*: Hardcoded the resources count to "2" for the "The Ethics of AI" project in the home view.
+  - *Tech Notes*: Modified `App.jsx` to conditionally render `2` instead of calculating the length of the file list when the folder name is "The Ethics of AI".
+
+- [2026-05-10/09:04]: Add Migration for 'Diritto Privato' to 'Private Law'
+  - *Details*: Added a migration in the `goals` state initialization to rename "Diritto Privato" to "Private Law" if it exists in the loaded `localStorage` data. This fixes the issue where the user still saw the old name due to cached data.
+  - *Tech Notes*: Modified `App.jsx` to check if `base["Diritto Privato"]` exists, assign it to `base["Private Law"]`, and delete the old key.

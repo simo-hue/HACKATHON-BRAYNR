@@ -159,6 +159,12 @@
   flex-direction: column;
 }
 
+.collection-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 /* Grid & Folders */
 .grid-container {
   display: grid;
@@ -233,6 +239,8 @@
   flex-direction: column;
   gap: 1rem;
   max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .file-card {
@@ -1326,6 +1334,8 @@
   flex-direction: column;
   gap: 0.75rem;
   max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .part-folder-card {
@@ -1389,6 +1399,8 @@
 /* ── Arguments Section (folder view) ── */
 .arguments-section {
   max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 16px;
@@ -1618,6 +1630,8 @@
   flex-direction: column;
   gap: 1.25rem;
   max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .plan-banner {

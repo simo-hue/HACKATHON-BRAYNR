@@ -185,16 +185,21 @@ function App() {
   const [fileSystem, setFileSystem] = useState(() => {
     const saved = localStorage.getItem('fileSystem');
     const base = saved ? JSON.parse(saved) : {
-      "Intelligenza Artificiale": [
-        { name: "Lezione 1 - Intro.pdf", type: "pdf", pages: 12, words: 2500, difficulty: 'semplice' },
-        { name: "Reti Neurali.docx", type: "doc", pages: 25, words: 6000, difficulty: 'difficile' }
+      "Math": [
+        { name: "Calculus I - Limits.pdf", type: "pdf", pages: 12, words: 2500, difficulty: 'semplice' },
+        { name: "Linear Algebra.docx", type: "doc", pages: 25, words: 6000, difficulty: 'difficile' }
       ],
       "Fisica Quantistica": [
         { name: "Appunti Schrödinger.pdf", type: "pdf", pages: 8, words: 1800, difficulty: 'medio' }
       ],
-      "Storia Contemporanea": [],
-      "Basi di Dati": [],
-      "Diritto Privato": []
+      "History": [
+        { name: "World War II Overview.pdf", type: "pdf", pages: 30, words: 8500, difficulty: 'medio' },
+        { name: "Cold War Timeline.docx", type: "doc", pages: 15, words: 4000, difficulty: 'semplice' }
+      ],
+      "Databases": [
+        { name: "SQL Basics.txt", type: "txt", pages: 5, words: 1500, difficulty: 'semplice' },
+        { name: "NoSQL vs Relational.txt", type: "txt", pages: 8, words: 2400, difficulty: 'medio' }
+      ],
     };
     if (!base["The Ethics of AI"]) {
       base["The Ethics of AI"] = [];
@@ -209,25 +214,25 @@ function App() {
   const [goals, setGoals] = useState(() => {
     const saved = localStorage.getItem('goals');
     const base = saved ? JSON.parse(saved) : {
-      "Intelligenza Artificiale": {
+      "Math": {
         deadline: "2026-06-15",
         dailyHours: 2,
         daysOfWeek: ["Mon", "Wed", "Fri"],
         progress: 35
       },
-      "Storia Contemporanea": {
+      "History": {
         deadline: "2026-04-10",
         dailyHours: 1,
         daysOfWeek: ["Tue", "Thu"],
         progress: 100
       },
-      "Basi di Dati": {
+      "Databases": {
         deadline: "2026-04-20",
         dailyHours: 3,
         daysOfWeek: ["Mon", "Wed", "Fri"],
         progress: 100
       },
-      "Diritto Privato": {
+      "Private Law": {
         deadline: "2026-05-01",
         dailyHours: 2,
         daysOfWeek: ["Sat", "Sun"],
@@ -241,6 +246,10 @@ function App() {
         daysOfWeek: ["Mon", "Wed", "Fri"],
         progress: 8
       };
+    }
+    if (base["Diritto Privato"]) {
+      base["Private Law"] = base["Diritto Privato"];
+      delete base["Diritto Privato"];
     }
     Object.keys(base).forEach(key => {
       if (!key.trim()) delete base[key];
@@ -428,15 +437,15 @@ function App() {
     const base = saved ? JSON.parse(saved) : {};
     if (!base["The Ethics of AI"]) {
       base["The Ethics of AI"] = [
-        { id: 1,  title: "Introduction", order: 0 },
-        { id: 2,  title: "Ch.1 – What AI Are We Talking About?", order: 1 },
-        { id: 3,  title: "Ch.2 – Human-Aided AI", order: 2 },
-        { id: 4,  title: "Ch.3 – Digital Counter-Enlightenment and the Power of Design", order: 3 },
-        { id: 5,  title: "Ch.4 – Subjectivity and Power in the Ethics of AI", order: 4 },
-        { id: 6,  title: "Ch.5 – AI Systems as Prediction Machines", order: 5 },
-        { id: 7,  title: "Ch.6 – Predictive Privacy", order: 6 },
-        { id: 8,  title: "Ch.7 – The Culture of Prediction: Ethics and Epistemology", order: 7 },
-        { id: 9,  title: "Ch.8 – AI Cybernetics", order: 8 },
+        { id: 1, title: "Introduction", order: 0 },
+        { id: 2, title: "Ch.1 – What AI Are We Talking About?", order: 1 },
+        { id: 3, title: "Ch.2 – Human-Aided AI", order: 2 },
+        { id: 4, title: "Ch.3 – Digital Counter-Enlightenment and the Power of Design", order: 3 },
+        { id: 5, title: "Ch.4 – Subjectivity and Power in the Ethics of AI", order: 4 },
+        { id: 6, title: "Ch.5 – AI Systems as Prediction Machines", order: 5 },
+        { id: 7, title: "Ch.6 – Predictive Privacy", order: 6 },
+        { id: 8, title: "Ch.7 – The Culture of Prediction: Ethics and Epistemology", order: 7 },
+        { id: 9, title: "Ch.8 – AI Cybernetics", order: 8 },
         { id: 10, title: "Ch.9 – Opacity in ML and Predictive Analytics", order: 9 },
         { id: 11, title: "Ch.10 – Bias in Cybernetic AI Systems", order: 10 },
         { id: 12, title: "Ch.11 – Collective Responsibility in the Ethics of AI", order: 11 },
@@ -844,7 +853,7 @@ function App() {
       setFileSystem(prev => {
         const updated = { ...prev };
         const flatFiles = updated[currentFolder].filter(item => !item.isFolder);
-        
+
         const existingSubFolders = [];
         for (let i = 1; i <= 5; i++) {
           existingSubFolders.push({
@@ -1029,15 +1038,15 @@ function App() {
               </div>
             )}
             {currentView === 'part_folder' && (
-              <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button onClick={() => { setCurrentPart(null); setCurrentView('folder'); }} className="btn-back">
                   <ArrowLeft size={20} />
                 </button>
                 <div>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.25rem', fontWeight: 600, fontSize: '0.85rem'}}>
-                    <span style={{cursor:'pointer'}} onClick={() => { setCurrentPart(null); setCurrentView('folder'); }}>{currentFolder}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.25rem', fontWeight: 600, fontSize: '0.85rem' }}>
+                    <span style={{ cursor: 'pointer' }} onClick={() => { setCurrentPart(null); setCurrentView('folder'); }}>{currentFolder}</span>
                     <ChevronRight size={14} />
-                    <span style={{color: 'var(--text-muted)'}}>{currentPart?.name}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{currentPart?.name}</span>
                   </div>
                   <h1>{currentPart?.name}</h1>
                   <p>{currentPart?.chapters?.length} capitoli in questo argomento.</p>
@@ -1174,7 +1183,7 @@ function App() {
                       <Folder size={32} />
                     </div>
                     <h3>{folderName}</h3>
-                    <p>{fileSystem[folderName].reduce((acc, curr) => curr.isFolder ? acc + curr.files.length : acc + 1, 0)} resources</p>
+                    <p>{folderName === 'The Ethics of AI' ? 2 : fileSystem[folderName].reduce((acc, curr) => curr.isFolder ? acc + curr.files.length : acc + 1, 0)} resources</p>
                   </motion.div>
                 ))}
 
@@ -1208,7 +1217,7 @@ function App() {
 
             {/* VIEW: FOLDER (Files inside) */}
             {currentView === 'folder' && (
-              <motion.div key="folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
+              <motion.div key="folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="collection-container">
                 {currentFolder === 'The Ethics of AI' ? (
                   isPlanProposal ? (
                     /* PLAN PROPOSAL VIEW */
@@ -1402,7 +1411,7 @@ function App() {
                                 </button>
                               </div>
                             )}
-                            
+
                             {currentFolderFiles.map((file, idx) => (
                               <motion.div key={idx} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
                                 <div className="file-icon-bg">
@@ -1410,12 +1419,12 @@ function App() {
                                 </div>
                                 <div className="file-info">
                                   <h4>{file.name}</h4>
-                                  <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
-                                    <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{file.pages || 15} p. • {file.words || 3000} words</span>
+                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{file.pages || 15} p. • {file.words || 3000} words</span>
                                     <span className={`difficulty-badge ${file.difficulty || 'medio'}`}>{file.difficulty || 'medio'}</span>
                                   </div>
                                 </div>
-                                <div style={{display: 'flex', gap: '0.5rem'}}>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
                                   <button className="btn-read" onClick={() => handleReadFile(file)}>Read</button>
                                 </div>
                               </motion.div>
@@ -1480,7 +1489,7 @@ function App() {
 
             {/* VIEW: PART FOLDER (chapters inside one argument part) */}
             {currentView === 'part_folder' && currentPart && (
-              <motion.div key="part_folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }}>
+              <motion.div key="part_folder" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="collection-container">
                 <div className="files-list">
                   {currentPart.chapters.map((chapter, idx) => (
                     <motion.div key={chapter.id} className="file-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}>
@@ -1489,15 +1498,15 @@ function App() {
                       </div>
                       <div className="file-info">
                         <h4>{chapter.name}</h4>
-                        <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem'}}>
-                          <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>{chapter.pages} p. • {chapter.words} words</span>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{chapter.pages} p. • {chapter.words} words</span>
                           <span className={`difficulty-badge ${chapter.difficulty}`}>{chapter.difficulty}</span>
-                          <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                             {chapter.content.split('\n').filter(l => l.trim()).length} topics
                           </span>
                         </div>
                       </div>
-                      <div style={{display: 'flex', gap: '0.5rem'}}>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button className="btn-read" onClick={() => { setPreviousView('part_folder'); handleReadFile(chapter); }}>Read</button>
                       </div>
                     </motion.div>
@@ -1510,7 +1519,7 @@ function App() {
             {currentView === 'read_file' && (
               <motion.div key="read_file" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="reader-container">
                 <div className="reader-header">
-                  <button onClick={() => setCurrentView(previousView === 'part_folder' ? 'part_folder' : 'folder')} className="btn-back" style={{padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <button onClick={() => setCurrentView(previousView === 'part_folder' ? 'part_folder' : 'folder')} className="btn-back" style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ArrowLeft size={20} />
                   </button>
                   <h2 style={{ margin: 0 }}>{currentFile?.name}</h2>
@@ -1549,8 +1558,8 @@ function App() {
                     </>
                   )}
 
-                  <button 
-                    className="fab-button" 
+                  <button
+                    className="fab-button"
                     onClick={() => setCreateQuestionState({ ...createQuestionState, isOpen: true })}
                     title="Create Flashcard / Question"
                   >
@@ -1596,7 +1605,7 @@ function App() {
                         <BrainCircuit size={64} color="var(--primary)" style={{ marginBottom: '1.5rem', display: 'inline-block' }} />
                         <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Session Complete!</h2>
                         <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '3rem' }}>You've reviewed {currentSubjectFlashcards.length} flashcards.</p>
-                        
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
                           <div style={{ background: 'rgba(239,68,68,0.1)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(239,68,68,0.2)' }}>
                             <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#ef4444' }}>{studyState.results?.filter(r => r === 'hard').length || 0}</div>
@@ -1611,7 +1620,7 @@ function App() {
                             <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontWeight: 600 }}>Easy</div>
                           </div>
                         </div>
-                        
+
                         <button className="btn-save" onClick={() => setCurrentView('folder')} style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
                           Back to Subject
                         </button>
@@ -1624,22 +1633,22 @@ function App() {
                             <div className="flashcard-front">
                               <span className="flashcard-label">Question</span>
                               <p className="flashcard-text">{currentSubjectFlashcards[studyState.currentIndex]?.q}</p>
-                              
+
                               {currentSubjectFlashcards[studyState.currentIndex]?.hints && currentSubjectFlashcards[studyState.currentIndex].hints.length > 0 && (
                                 <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }} onClick={(e) => e.stopPropagation()}>
                                   {currentSubjectFlashcards[studyState.currentIndex].hints.map((hint, idx) => (
-                                    <span key={idx} 
+                                    <span key={idx}
                                       onClick={() => {
                                         if (!studyState.activeHints?.includes(idx)) {
                                           setStudyState(prev => ({ ...prev, activeHints: [...(prev.activeHints || []), idx] }));
                                         }
                                       }}
-                                      style={{ 
-                                        backgroundColor: studyState.activeHints?.includes(idx) ? 'var(--primary)' : 'var(--surface)', 
+                                      style={{
+                                        backgroundColor: studyState.activeHints?.includes(idx) ? 'var(--primary)' : 'var(--surface)',
                                         color: studyState.activeHints?.includes(idx) ? 'white' : 'var(--text-muted)',
-                                        padding: '0.5rem 1rem', 
-                                        borderRadius: '2rem', 
-                                        fontSize: '0.875rem', 
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '2rem',
+                                        fontSize: '0.875rem',
                                         cursor: studyState.activeHints?.includes(idx) ? 'default' : 'pointer',
                                         border: '1px solid var(--border)',
                                         display: 'flex',
@@ -1688,22 +1697,22 @@ function App() {
                         <span style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Question {studyState.currentIndex + 1} of {currentSubjectQA.length}</span>
                         <div className="qa-question-box">
                           <p className="flashcard-text" style={{ margin: 0 }}>{currentSubjectQA[studyState.currentIndex]?.q}</p>
-                          
+
                           {currentSubjectQA[studyState.currentIndex]?.hints && currentSubjectQA[studyState.currentIndex].hints.length > 0 && (
                             <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
                               {currentSubjectQA[studyState.currentIndex].hints.map((hint, idx) => (
-                                <span key={idx} 
+                                <span key={idx}
                                   onClick={() => {
                                     if (!studyState.activeHints?.includes(idx)) {
                                       setStudyState(prev => ({ ...prev, activeHints: [...(prev.activeHints || []), idx] }));
                                     }
                                   }}
-                                  style={{ 
-                                    backgroundColor: studyState.activeHints?.includes(idx) ? 'var(--primary)' : 'var(--surface)', 
+                                  style={{
+                                    backgroundColor: studyState.activeHints?.includes(idx) ? 'var(--primary)' : 'var(--surface)',
                                     color: studyState.activeHints?.includes(idx) ? 'white' : 'var(--text-muted)',
-                                    padding: '0.5rem 1rem', 
-                                    borderRadius: '2rem', 
-                                    fontSize: '0.875rem', 
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '2rem',
+                                    fontSize: '0.875rem',
                                     cursor: studyState.activeHints?.includes(idx) ? 'default' : 'pointer',
                                     border: '1px solid var(--border)',
                                     display: 'flex',
@@ -1944,9 +1953,9 @@ function App() {
                                 </div>
                                 <div className="difficulty-selector" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                   {file.content && !file.isTranscribing && (
-                                    <button 
-                                      type="button" 
-                                      style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }} 
+                                    <button
+                                      type="button"
+                                      style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}
                                       onClick={() => setExpandedTranscriptionIdx(expandedTranscriptionIdx === idx ? null : idx)}
                                       title="Preview Content"
                                     >
@@ -1969,9 +1978,9 @@ function App() {
                               </div>
                               <AnimatePresence>
                                 {expandedTranscriptionIdx === idx && file.content && (
-                                  <motion.div 
-                                    initial={{ opacity: 0, height: 0 }} 
-                                    animate={{ opacity: 1, height: 'auto' }} 
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
                                     style={{ overflow: 'hidden' }}
                                   >
@@ -1994,7 +2003,7 @@ function App() {
                 </div>
               </motion.div>
             )}
-                   {/* VIEW: SELECT SUBJECT FOR GOAL */}
+            {/* VIEW: SELECT SUBJECT FOR GOAL */}
             {currentView === 'select_subject_for_goal' && (
               <motion.div key="select_subject_for_goal" initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.3 }} className="center-container">
                 <div className="create-subject-form" style={{ padding: '3rem' }}>
