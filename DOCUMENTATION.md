@@ -308,5 +308,9 @@
   - *Details*: Fixed a bug where questions created inside a document in a subfolder were not showing up in study mode. This was because `currentSubFolder` was not being set when entering a part folder, causing questions to be saved under the wrong key.
   - *Tech Notes*: Modified `App.jsx` to set `currentSubFolder` to `part.name` when clicking on a part card, and clear it when navigating back to the main folder view or leaving study mode.
 
+- [2026-05-10/10:36]: One-time Migration to Clear "The Ethics of AI" Questions
+  - *Details*: Added a one-time migration to clear existing questions for "The Ethics of AI" and its subfolders from `localStorage`. This ensures the user starts with a clean slate for the demo and only sees questions they create.
+  - *Tech Notes*: Added check for `clearEthicsQuestionsMigration` in `useState` initializer for `subjectQuestions` in `App.jsx`. If not present, deletes relevant keys from `localStorage` and sets the flag.
+
 
 

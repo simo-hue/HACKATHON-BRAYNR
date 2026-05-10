@@ -28,5 +28,5 @@
 [] show the calendar page
 
 [] statistics
-    [] check in concepts 
+    [] check-in for analyze data combined with the answers.
     

@@ -446,7 +446,22 @@ function App() {
 
   const [subjectQuestions, setSubjectQuestions] = useState(() => {
     const saved = localStorage.getItem('subjectQuestions');
-    return saved ? JSON.parse(saved) : {};
+    let base = saved ? JSON.parse(saved) : {};
+    
+    // Migration to clear old mock questions for "The Ethics of AI"
+    const migrationDone = localStorage.getItem('clearEthicsQuestionsMigration');
+    if (!migrationDone) {
+      if (base["The Ethics of AI"]) delete base["The Ethics of AI"];
+      Object.keys(base).forEach(key => {
+        if (key.startsWith("The Ethics of AI/")) {
+          delete base[key];
+        }
+      });
+      localStorage.setItem('clearEthicsQuestionsMigration', 'true');
+      localStorage.setItem('subjectQuestions', JSON.stringify(base));
+    }
+    
+    return base;
   });
 
   useEffect(() => {
@@ -1222,7 +1237,7 @@ function App() {
                   <div className="add-icon-bg">
                     <Plus size={36} />
                   </div>
-                  <h3>New Subject</h3>
+                  <h3>New Collection</h3>
                 </motion.div>
 
                 {folderToDelete && (
