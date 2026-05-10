@@ -536,8 +536,8 @@ function App() {
 
   const submitCheckIn = () => {
     const atLeastOneStudied = yesterdaySubjects.length > 0
-      ? yesterdaySubjects.some(s => checkedSubjects[s])
-      : checkedSubjects['general'];
+      ? yesterdaySubjects.some(s => checkedSubjects[s]) || checkedSubjects['the ethics of AI']
+      : checkedSubjects['general'] || checkedSubjects['the ethics of AI'];
 
     handleCheckIn(atLeastOneStudied);
   };
@@ -1179,6 +1179,12 @@ function App() {
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', background: 'rgba(255,255,255,0.02)' }}>
                         <input type="checkbox" checked={checkedSubjects['general'] || false} onChange={() => toggleCheckedSubject('general')} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
                         <span style={{ fontSize: '1rem' }}>I studied anyway outside the plan</span>
+                      </label>
+                    )}
+                    {!yesterdaySubjects.includes('the ethics of AI') && (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', background: 'rgba(255,255,255,0.02)' }}>
+                        <input type="checkbox" checked={checkedSubjects['the ethics of AI'] || false} onChange={() => toggleCheckedSubject('the ethics of AI')} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                        <span style={{ fontSize: '1rem' }}>the ethics of AI</span>
                       </label>
                     )}
                   </div>

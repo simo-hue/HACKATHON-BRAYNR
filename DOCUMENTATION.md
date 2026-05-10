@@ -292,5 +292,9 @@
   - *Details*: Populated the "Consistency with Study Plan" chart with hardcoded mock data to avoid it appearing all red and to make it look nicer.
   - *Tech Notes*: Replaced the usage of `stats.adherence.history` with a hardcoded array of booleans in the render method of the Consistency box in `App.jsx`. Recalculated the adherence rate dynamically based on this array.
 
+- [2026-05-10/09:33]: Add 'the ethics of AI' label to Daily Check-in
+  - *Details*: Added a hardcoded label "the ethics of AI" to the Daily Check-in popup list of subjects. This allows the user to select it even if it wasn't in the scheduled subjects for yesterday.
+  - *Tech Notes*: Modified `App.jsx`. Added a conditional label in the `checkin-subjects-list` and updated `submitCheckIn` to consider it when validating if at least one subject was studied.
+
 
 
