@@ -864,8 +864,9 @@ function App() {
 
     setUploadFiles([]);
     setCurrentFolder(targetFolder);
-    setPreviousView(null);
-    setCurrentView('folder');
+    setTempGoal({ deadline: "", dailyHours: 2, daysOfWeek: [] });
+    setPreviousView('upload_files');
+    setCurrentView('set_goals');
   };
 
   const handleCreatePlanClick = () => {
@@ -1044,7 +1045,7 @@ function App() {
             {currentView === 'home' && (
               <>
                 <h1>your collections</h1>
-                <p>Select a subject to study or add new sources.</p>
+                <p>Select a collection to study or add new sources.</p>
               </>
             )}
             {currentView === 'folder' && (

@@ -296,5 +296,9 @@
   - *Details*: Added a hardcoded label "the ethics of AI" to the Daily Check-in popup list of subjects. This allows the user to select it even if it wasn't in the scheduled subjects for yesterday.
   - *Tech Notes*: Modified `App.jsx`. Added a conditional label in the `checkin-subjects-list` and updated `submitCheckIn` to consider it when validating if at least one subject was studied.
 
+- [2026-05-10/09:55]: File Upload to Goals Flow Redirection
+  - *Details*: Updated the workflow after uploading files. Now, clicking "Save and Continue" redirects the user to the goal setting view instead of directly to the folder view. The files are viewed only after the goal is set or skipped.
+  - *Tech Notes*: Modified `handleSaveUploadAndGoToGoals` in `App.jsx` to set `currentView` to `'set_goals'` and initialized `tempGoal`.
+
 
 
