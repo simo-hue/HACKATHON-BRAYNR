@@ -58,7 +58,7 @@
 
 - [2026-05-09/19:45]: Ripristino Vista Calendario
   - *Details*: Reinserita la vista del calendario che era stata involontariamente rimossa durante le modifiche manuali.
-  - *Tech Notes*: Modificato `App.jsx` reinserendo il blocco `{currentView === 'calendar' && (...)}` con la griglia e la logica delle sessioni.
+  - *Tech Notes*: Modificato `App.jsx reinserendo il blocco `{currentView === 'calendar' && (...)}` con la griglia e la logica delle sessioni.
 
 - [2026-05-09/19:46]: Miglioramento Check-in Giornaliero
   - *Details*: Spostato il banner di check-in dall'area statistiche all'area comune (`content-area`) in modo che sia visibile al primo accesso su qualsiasi pagina. Aggiornato il testo per chiedere esplicitamente se l'utente ha studiato "ieri".
@@ -117,7 +117,7 @@
   - *Tech Notes*: Modificato `App.jsx`. Aggiunto lo stato persistente `subjectQuestions`. Inserito un form tramite modale nella vista `read_file` per l'inserimento rapido di domande/risposte. Modificata la logica della vista `study_mode` per iterare dinamicamente sulle domande generate dall'utente. Gestiti anche gli "empty state" se non ci sono domande.
 
 - [2026-05-09/21:20]: Integrazione ElevenLabs Speech-to-Text (Scribe)
-  - *Details*: Aggiunta la trascrizione automatica da file audio/video a testo durante la fase di upload utilizzando l'API di ElevenLabs. Il file importato, se è un media, viene inviato all'API e salvato localmente come file di testo, mantenendo il nome originale.
+  - *Details*: Aggiunta la considerazione della trascrizione automatica da file audio/video a testo durante la fase di upload utilizzando l'API di ElevenLabs. Il file importato, se è un media, viene inviato all'API e salvato localmente come file di testo, mantenendo il nome originale.
   - *Tech Notes*: Modificata la funzione di upload in `App.jsx` per invocare asincronamente l'endpoint API `speech-to-text` (model_id: scribe_v1). Aggiunto lo stato UI `isUploading` con loader animato. Creato `.env.example` per configurare `VITE_ELEVENLABS_API_KEY`.
 
 - [2026-05-09/21:26]: Miglioramento UX Trascrizione e View Reale
@@ -263,3 +263,34 @@
 - [2026-05-10/09:13]: Calendar Subject Color Enhancement
   - *Details*: Moved the default view to the calendar and enhanced the visualization of subjects in the calendar grid. Subjects are now displayed with background colors and matching text colors to make them more distinct.
   - *Tech Notes*: Modified `App.jsx`. Changed the initial state of `currentView` to `'calendar'`. Updated the rendering of `activeSessions` in the calendar view to use a colored chip-like background and colored text based on `getSubjectColor`.
+
+- [2026-05-10/09:15]: Fix Color Collisions in Calendar
+  - *Details*: Fixed an issue where different subjects had the same color in the calendar due to hash collisions. Added a manual map for known subjects to guarantee distinct colors.
+  - *Tech Notes*: Modified `App.jsx`. Updated `getSubjectColor` to use a lookup table for "Math", "Databases", "The Ethics of AI", "History", and "Private Law" before falling back to the hash algorithm.
+
+- [2026-05-10/09:16]: Fix Argument Schedule computation for English Locales
+  - *Details*: Fixed a bug where the calendar did not show specific chapter plans because of a language mismatch (Italian vs English day names) in the schedule generator.
+  - *Tech Notes*: Modified `computeArgumentSchedule` in `App.jsx` to check against both English and Italian day names when matching goals to specific calendar days.
+
+- [2026-05-10/09:18]: Interactive Calendar Days with Detail Modals
+  - *Details*: Added functionality to click on any day in the calendar to open a detailed modal showing the specific subjects, hours, and topics planned for that day.
+  - *Tech Notes*: Added `selectedCalendarDay` state in `App.jsx`. Attached `onClick` handlers to `.calendar-cell` elements. Reused existing modal CSS classes for the popup overlay and content.
+
+- [2026-05-10/09:25]: Rectangular Daily Streak with Study Hours Chart
+  - *Details*: Modified the "Daily Streak" box in the statistics page to be rectangular (spanning 2 columns) and added a bar chart showing study hours for the last 14 days. The data is based on the adherence history, mapping "true" to simulated hours (2.5h or 3.5h) to show a realistic chart.
+  - *Tech Notes*: Modified `App.jsx`. Added `gridColumn: 'span 2'` and `flexDirection: 'row'` to the Daily Streak card. Added a `.bar-chart` container with flexbox-based bars that calculate height percent based on simulated study hours.
+
+- [2026-05-10/09:27]: Mock Data for Daily Streak Chart
+  - *Details*: Populated the Daily Streak bar chart with specific hardcoded mock data to make it look more realistic and aesthetically pleasing, as requested by the user.
+  - *Tech Notes*: Replaced the dynamically generated hours in `App.jsx` with a static array of values `[2.5, 3.2, 0, 4.5, 2.1, 3.8, 1.5, 3.0, 4.2, 0, 2.8, 3.5, 4.0, 3.7]`. Changed the day labels from `D1`, `D2`... to just numbers `1`, `2`... `14`.
+
+- [2026-05-10/09:28]: Set Default View to Home
+  - *Details*: Changed the default view of the application to 'home' so that refreshing the page takes the user to the home screen.
+  - *Tech Notes*: Modified the initial state of `currentView` in `App.jsx` from `'calendar'` to `'home'`.
+
+- [2026-05-10/09:30]: Mock Data for Consistency Box
+  - *Details*: Populated the "Consistency with Study Plan" chart with hardcoded mock data to avoid it appearing all red and to make it look nicer.
+  - *Tech Notes*: Replaced the usage of `stats.adherence.history` with a hardcoded array of booleans in the render method of the Consistency box in `App.jsx`. Recalculated the adherence rate dynamically based on this array.
+
+
+

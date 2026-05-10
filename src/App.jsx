@@ -186,7 +186,7 @@ const getCalendarDays = (date) => {
 
 function App() {
   // Navigation & Hierarchy State
-  const [currentView, setCurrentView] = useState('calendar'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal', 'statistiche', 'read_file', 'study_mode', 'calendar'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal', 'statistiche', 'read_file', 'study_mode', 'calendar'
   const [currentFolder, setCurrentFolder] = useState(null);
   const [currentPart, setCurrentPart] = useState(null);
   const [currentSubFolder, setCurrentSubFolder] = useState(null);
@@ -2304,13 +2304,34 @@ function App() {
                 <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
 
                   {/* CARD 1: STREAK */}
-                  <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div className="stat-header"><Flame color="#f97316" /> <h3>Daily Streak</h3></div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '1rem 0' }}>
-                      <span style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)' }}>{stats.flashcards.streakDays}</span>
-                      <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>days</span>
+                  <div className="stat-card" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="stat-header"><Flame color="#f97316" /> <h3>Daily Streak</h3></div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '0.5rem 0' }}>
+                        <span style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)' }}>{stats.flashcards.streakDays}</span>
+                        <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>days</span>
+                      </div>
+                      <p style={{ color: 'var(--text-muted)' }}>Consecutive studies completed. Keep it up!</p>
                     </div>
-                    <p style={{ color: 'var(--text-muted)' }}>Consecutive studies completed. Keep it up!</p>
+                    <div className="bar-chart" style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '120px', flex: 2, marginLeft: '2rem', paddingBottom: '1rem' }}>
+                      {[2.5, 3.2, 0, 4.5, 2.1, 3.8, 1.5, 3.0, 4.2, 0, 2.8, 3.5, 4.0, 3.7].map((hours, i) => {
+                        const maxHeight = 5; // Max simulated hours
+                        const heightPercent = (hours / maxHeight) * 100;
+                        const studied = hours > 0;
+                        return (
+                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', height: '100%' }}>
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                              <div style={{ width: '100%', height: `${heightPercent}%`, background: studied ? 'var(--primary)' : 'rgba(255,255,255,0.05)', borderRadius: '4px 4px 0 0', position: 'relative', minHeight: studied ? '5px' : '0' }}>
+                                {studied && (
+                                  <span style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 'bold' }}>{hours}h</span>
+                                )}
+                              </div>
+                            </div>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{i+1}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* CARD 2: RETENTION CIRCLE */}
@@ -2383,14 +2404,23 @@ function App() {
                 {/* CARD 5: ADHERENCE (WIDE) */}
                 <div className="stat-card wide">
                   <div className="stat-header"><Activity color="#00CBCC" /> <h3>Consistency with Study Plan</h3></div>
-                  <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
-                    Your last two weeks. You have an adherence rate of <strong style={{ color: 'white' }}>{Math.round((stats.adherence.completedDays / Math.max(1, (stats.adherence.completedDays + stats.adherence.missedDays))) * 100)}%</strong>.
-                  </p>
-                  <div className="adherence-graph" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px' }}>
-                    {stats.adherence.history.map((studied, i) => (
-                      <div key={i} className={`adherence-day ${studied ? 'studied' : 'missed'}`} title={studied ? "Studied" : "Skipped"} style={{ flex: 1, height: '30px', borderRadius: '6px', cursor: 'pointer' }}></div>
-                    ))}
-                  </div>
+                  {(() => {
+                    const mockHistory = [true, true, true, false, true, true, true, true, false, true, true, true, false, true];
+                    const completed = mockHistory.filter(Boolean).length;
+                    const rate = Math.round((completed / mockHistory.length) * 100);
+                    return (
+                      <>
+                        <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
+                          Your last two weeks. You have an adherence rate of <strong style={{ color: 'white' }}>{rate}%</strong>.
+                        </p>
+                        <div className="adherence-graph" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px' }}>
+                          {mockHistory.map((studied, i) => (
+                            <div key={i} className={`adherence-day ${studied ? 'studied' : 'missed'}`} title={studied ? "Studied" : "Skipped"} style={{ flex: 1, height: '30px', borderRadius: '6px', cursor: 'pointer' }}></div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </motion.div>
             )}
