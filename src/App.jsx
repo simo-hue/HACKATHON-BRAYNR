@@ -118,7 +118,9 @@ const ETHICS_OF_AI_PARTS = [
 
 function computeArgumentSchedule(goals, subjectArguments) {
   const schedule = {};
-  const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const dayNamesEn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNamesIt = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  
   Object.entries(subjectArguments).forEach(([subject, args]) => {
     if (!args || args.length === 0) return;
     const goalInfo = goals[subject];
@@ -131,8 +133,12 @@ function computeArgumentSchedule(goals, subjectArguments) {
     }
     const studyDays = [];
     for (let day = 1; day <= deadlineDay; day++) {
-      const weekday = dayNames[new Date(2026, 4, day).getDay()];
-      if (goalInfo.daysOfWeek.includes(weekday)) studyDays.push(day);
+      const date = new Date(2026, 4, day);
+      const weekdayEn = dayNamesEn[date.getDay()];
+      const weekdayIt = dayNamesIt[date.getDay()];
+      if (goalInfo.daysOfWeek.includes(weekdayEn) || goalInfo.daysOfWeek.includes(weekdayIt)) {
+        studyDays.push(day);
+      }
     }
     if (!studyDays.length) return;
     const sortedArgs = [...args].sort((a, b) => a.order - b.order);
@@ -306,6 +312,7 @@ function App() {
   const [viewingGoal, setViewingGoal] = useState(null);
   const [folderToDelete, setFolderToDelete] = useState(null);
   const [calendarDate, setCalendarDate] = useState(new Date(2026, 4, 1)); // May 2026
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
 
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -1858,7 +1865,21 @@ function App() {
                         day === new Date().getDate();
 
                       return (
-                        <div key={idx} className={`calendar-cell ${day ? '' : 'empty'} ${isToday ? 'today' : ''}`}>
+                        <div 
+                          key={idx} 
+                          className={`calendar-cell ${day ? '' : 'empty'} ${isToday ? 'today' : ''}`}
+                          onClick={() => {
+                            if (day) {
+                              setSelectedCalendarDay({ 
+                                day, 
+                                date: new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day),
+                                activeSessions, 
+                                dayArguments 
+                              });
+                            }
+                          }}
+                          style={{ cursor: day ? 'pointer' : 'default' }}
+                        >
                           {day && <span className="day-number">{day}</span>}
                           <div className="sessions-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                             {activeSessions.length > 0 && (
@@ -1910,6 +1931,53 @@ function App() {
                     });
                   })()}
                 </div>
+
+                {selectedCalendarDay && (
+                  <div className="modal-overlay" onClick={() => setSelectedCalendarDay(null)}>
+                    <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} onClick={(e) => e.stopPropagation()}>
+                      <div className="modal-header">
+                        <Calendar size={32} color="var(--primary)" />
+                        <h3>{selectedCalendarDay.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+                      </div>
+                      <div className="modal-body">
+                        {selectedCalendarDay.activeSessions.length === 0 ? (
+                          <p style={{ color: 'var(--text-muted)' }}>No study sessions planned for this day.</p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {selectedCalendarDay.activeSessions.map((session, sIdx) => {
+                              const subjectColor = getSubjectColor(session.subject);
+                              return (
+                                <div key={sIdx} style={{ 
+                                  background: `${subjectColor}15`, 
+                                  padding: '1rem', 
+                                  borderRadius: '8px',
+                                  border: `1px solid ${subjectColor}30`
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: subjectColor }}></span>
+                                    <h4 style={{ color: subjectColor, margin: 0 }}>{session.subject}</h4>
+                                    <span style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{session.hours} hours</span>
+                                  </div>
+                                  {selectedCalendarDay.dayArguments[session.subject] ? (
+                                    <div style={{ fontSize: '0.9rem', color: 'var(--text)' }}>
+                                      <strong>Topic:</strong> {selectedCalendarDay.dayArguments[session.subject]}
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>No specific topic assigned.</div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <div className="modal-footer" style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button onClick={() => setSelectedCalendarDay(null)} className="btn-skip" style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}>Close</button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+
               </motion.div>
             )}
 
