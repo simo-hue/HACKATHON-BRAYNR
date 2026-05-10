@@ -43,7 +43,7 @@ import './App.css';
 
 const getSubjectColor = (subject) => {
   const palette = [
-    '#00CBCC', // Purple
+    '#00CBCC', // Teal
     '#ec4899', // Pink
     '#3b82f6', // Blue
     '#10b981', // Green
@@ -52,6 +52,20 @@ const getSubjectColor = (subject) => {
     '#06b6d4', // Cyan
     '#a855f7', // Purple-light
   ];
+  
+  // Manual map for default subjects to ensure distinct colors
+  const manualMap = {
+    "Math": '#3b82f6',
+    "Databases": '#10b981',
+    "The Ethics of AI": '#ec4899',
+    "History": '#f59e0b',
+    "Private Law": '#ef4444'
+  };
+  
+  if (manualMap[subject]) {
+    return manualMap[subject];
+  }
+
   let hash = 0;
   for (let i = 0; i < subject.length; i++) {
     hash = subject.charCodeAt(i) + ((hash << 5) - hash);
@@ -166,7 +180,7 @@ const getCalendarDays = (date) => {
 
 function App() {
   // Navigation & Hierarchy State
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal', 'statistiche', 'read_file', 'study_mode', 'calendar'
+  const [currentView, setCurrentView] = useState('calendar'); // 'home', 'folder', 'create_name', 'upload_files', 'set_goals', 'obiettivi', 'select_subject_for_goal', 'statistiche', 'read_file', 'study_mode', 'calendar'
   const [currentFolder, setCurrentFolder] = useState(null);
   const [currentPart, setCurrentPart] = useState(null);
   const [currentSubFolder, setCurrentSubFolder] = useState(null);
@@ -1869,17 +1883,26 @@ function App() {
                             )}
 
                             <div className="sessions-text-list" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                              {activeSessions.map((session, sIdx) => (
-                                <div key={sIdx} style={{ marginBottom: '3px' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: getSubjectColor(session.subject), flexShrink: 0 }}></span>
-                                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.subject} ({session.hours}h)</span>
+                              {activeSessions.map((session, sIdx) => {
+                                const subjectColor = getSubjectColor(session.subject);
+                                return (
+                                  <div key={sIdx} style={{ 
+                                    marginBottom: '4px', 
+                                    background: `${subjectColor}15`, 
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    border: `1px solid ${subjectColor}30`
+                                  }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: subjectColor, flexShrink: 0 }}></span>
+                                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: subjectColor, fontWeight: 600 }}>{session.subject} ({session.hours}h)</span>
+                                    </div>
+                                    {dayArguments[session.subject] && (
+                                      <div className="calendar-argument-chip" style={{ color: subjectColor, opacity: 0.8 }}>{dayArguments[session.subject]}</div>
+                                    )}
                                   </div>
-                                  {dayArguments[session.subject] && (
-                                    <div className="calendar-argument-chip">{dayArguments[session.subject]}</div>
-                                  )}
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         </div>

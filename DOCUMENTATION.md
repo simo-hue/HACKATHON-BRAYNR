@@ -165,7 +165,7 @@
   - *Tech Notes*: Modified `App.jsx`. Updated locale strings to `en-US` for date formatting and translated all hardcoded Italian strings in JSX.
 
 - [2026-05-09/22:35]: Fix Calendar Empty Issue
-  - *Details*: Fixed an issue where the calendar appeared empty after translation because it was looking for English day names while existing data in `localStorage` used Italian names.
+  - *Details*: Fixed an issue where the calendar appeared empty after translation because it was looking for English day names while existing data in `localStorage` data used Italian names.
   - *Tech Notes*: Modified `App.jsx`. Updated `DAYS` and `dayNames` to English, but added fallback checks for Italian day names in both the calendar loop and check-in logic to support legacy data.
 
 - [2026-05-09/22:40]: Calendar Deadline Integration
@@ -259,3 +259,7 @@
 - [2026-05-10/09:10]: Manual Entry for Daily Hours
   - *Details*: Allowed users to manually enter the daily study hours by typing in a number input, in addition to using the slider.
   - *Tech Notes*: Replaced the `span` showing the hours with an `input type="number"` and added a label "hours" next to it in `App.jsx`.
+
+- [2026-05-10/09:13]: Calendar Subject Color Enhancement
+  - *Details*: Moved the default view to the calendar and enhanced the visualization of subjects in the calendar grid. Subjects are now displayed with background colors and matching text colors to make them more distinct.
+  - *Tech Notes*: Modified `App.jsx`. Changed the initial state of `currentView` to `'calendar'`. Updated the rendering of `activeSessions` in the calendar view to use a colored chip-like background and colored text based on `getSubjectColor`.
